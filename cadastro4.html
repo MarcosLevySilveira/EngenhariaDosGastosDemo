@@ -33,6 +33,37 @@
             return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
         }
 
+        // ---------- Carta ao Eu Futuro ----------
+        // Disponível a partir do Nível 3 (depende do campo Tipo de Gasto).
+        // Ao registrar um gasto de impulso/arrependimento, oferece deixar uma nota
+        // curta pra si mesmo. Da próxima vez que a mesma categoria for usada, a
+        // nota reaparece antes de confirmar o novo lançamento.
+
+        const TIPOS_QUALIFICAM_CARTA = ["Arrependimento", "Pequeno impulso", "Grande impulso", "Setback evitável"];
+
+        function getCartas() {
+            return JSON.parse(localStorage.getItem("cartasEuFuturo_demo")) || [];
+        }
+
+        function saveCartas(cartas) {
+            localStorage.setItem("cartasEuFuturo_demo", JSON.stringify(cartas));
+        }
+
+        function verificarCartaAnterior() {
+            const categoria = document.getElementById("categoria").value;
+            const aviso = document.getElementById("avisoCartaAnterior");
+            if (!aviso) return;
+
+            const cartas = getCartas().filter(c => c.categoria === categoria);
+            if (cartas.length === 0) {
+                aviso.style.display = "none";
+                return;
+            }
+            const maisRecente = cartas[cartas.length - 1];
+            aviso.innerHTML = `⚠️ Da última vez em <strong>${categoria}</strong>, você escreveu pra si mesmo: <em>\u201c${maisRecente.texto}\u201d</em> <span class="insight-card-caption">(${maisRecente.data})</span>`;
+            aviso.style.display = "block";
+        }
+
         // ---------- Progressive disclosure (níveis) ----------
 
         const NIVEL_LIMIARES = { 2: 50, 3: 150, 4: 300 };
@@ -357,6 +388,20 @@
                 alert("Cadastro realizado com sucesso!");
             }
 
+            if (getNivelMaximo() >= 3 && tipo === "Saída" && TIPOS_QUALIFICAM_CARTA.includes(tipoGasto)) {
+                const nota = prompt("Quer deixar uma nota pro seu eu futuro sobre esse gasto? (opcional — deixe em branco pra pular)");
+                if (nota && nota.trim()) {
+                    const cartas = getCartas();
+                    cartas.push({
+                        categoria,
+                        gatilho: getNivelMaximo() >= 4 ? gatilho : null,
+                        texto: nota.trim(),
+                        data
+                    });
+                    saveCartas(cartas);
+                }
+            }
+
             window.location.reload();
         }
 
@@ -510,6 +555,7 @@
             document.getElementById("tipo").value = "Saída";
             aplicarMasterAutomatico();
             aplicarVisibilidadeNivel();
+            verificarCartaAnterior();
         }
 
         if ("serviceWorker" in navigator) {
@@ -536,6 +582,8 @@
         <a href="rsgDash.html">Dashboard RSG</a>
         <a href="gatilhos.html">Dashboard Inteligente</a>
         <a href="dre.html">Despesas e Receitas</a>
+<a href="briefing-semanal.html">Briefing Semanal</a>
+<a href="relatorio-mensal.html">Relatório Mensal</a>
         </div>
         <div class="nav-group">
             <p class="nav-group-title">Lançar</p>
@@ -623,7 +671,7 @@
             </div>
 
             <label for="categoria">Micro-Categoria</label>
-            <select id="categoria" onchange="aplicarMasterAutomatico(); verificarDicaFinanciamento();" required>
+            <select id="categoria" onchange="aplicarMasterAutomatico(); verificarDicaFinanciamento(); verificarCartaAnterior();" required>
                 <option value="Água">Água</option>
                 <option value="Air BNB">Air BNB</option>
                 <option value="Aluguel">Aluguel</option>
@@ -737,6 +785,8 @@
                 <option value="Vestuário Conjuge">Vestuário Cônjuge/Parceiro(a)</option>
                 <option value="Veterinário">Veterinário</option>
             </select>
+
+            <p id="avisoCartaAnterior" class="hint-text" style="display:none; border-left: 2px solid var(--beacon); padding-left: 10px;"></p>
 
             <label for="descricao">Descrição</label>
             <input type="text" id="descricao" required>
@@ -943,6 +993,7 @@
     </script>
 
 <script src="ios-warning.js"></script>
+<script src="briefing-lembrete.js"></script>
 </body>
 
 </html>
