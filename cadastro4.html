@@ -134,6 +134,17 @@
             if (!ehParcelavel) document.getElementById("parcelas").value = 1;
         }
 
+        function verificarDicaFinanciamento() {
+            const categoria = document.getElementById("categoria").value.toLowerCase();
+            const formaPagamento = document.getElementById("formaPagamento").value;
+            const dica = document.getElementById("dicaFinanciamento");
+
+            const categoriaSugereParcelamento = categoria.includes("financiamento") || categoria.includes("consórcio") || categoria.includes("consorcio");
+            const jaEhParcelado = formaPagamento.startsWith("meio:");
+
+            dica.style.display = (categoriaSugereParcelamento && !jaEhParcelado) ? "block" : "none";
+        }
+
         function nomeCartaoPorFormaPagamento(formaPagamento) {
             if (!formaPagamento || !formaPagamento.startsWith("meio:")) return null;
             const id = formaPagamento.replace("meio:", "");
@@ -365,6 +376,7 @@
             renderCartoesList();
             popularFormaPagamento();
             loadData();
+            verificarDicaFinanciamento();
         }
 
         if ("serviceWorker" in navigator) {
@@ -468,7 +480,7 @@
             </select>
 
             <label for="categoria">Micro-Categoria</label>
-            <select id="categoria" required>
+            <select id="categoria" onchange="verificarDicaFinanciamento()" required>
                 <option value="Água">Água</option>
                 <option value="Air BNB">Air BNB</option>
                 <option value="Aluguel">Aluguel</option>
@@ -597,7 +609,7 @@
             </select>
 
             <label for="formaPagamento">Forma de Pagamento</label>
-            <select id="formaPagamento" onchange="toggleParcelasVisibility()" required>
+            <select id="formaPagamento" onchange="toggleParcelasVisibility(); verificarDicaFinanciamento();" required>
                 <option value="Dinheiro">Dinheiro</option>
                 <option value="Débito">Débito</option>
                 <option value="PIX">PIX</option>
@@ -607,6 +619,13 @@
                 <label for="parcelas">Parcelas</label>
                 <input type="number" id="parcelas" min="1" max="420" value="1">
             </div>
+
+            <p id="dicaFinanciamento" class="hint-text" style="display:none;">
+                💡 É um financiamento novo com parcelas programadas? Cadastre ele em
+                "Gerenciar meios de pagamento parcelados" (no topo da página) e selecione
+                ele aqui em Forma de Pagamento — assim as parcelas futuras são geradas
+                automaticamente.
+            </p>
 
             <label for="rsg">RSG (Retorno Sobre Gasto)</label>
             <select id="rsg" required>
