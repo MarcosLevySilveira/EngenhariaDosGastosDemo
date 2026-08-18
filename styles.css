@@ -89,6 +89,34 @@ button, input, select {
     z-index: 20;
 }
 
+.ios-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: var(--coral-soft);
+    border-bottom: 1px solid var(--coral);
+    padding: 12px 16px;
+    font-size: 0.82rem;
+    color: var(--mist);
+}
+
+.ios-warning p {
+    margin: 0;
+    flex: 1;
+    line-height: 1.4;
+}
+
+.ios-warning button {
+    background: transparent;
+    border: none;
+    color: var(--fog);
+    font-size: 1rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 4px;
+    flex-shrink: 0;
+}
+
 .wordmark {
     font-family: var(--font-display);
     font-size: 1.25rem;
