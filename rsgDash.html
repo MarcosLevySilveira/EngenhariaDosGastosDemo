@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lighthouse — Dashboard RSG × Tipo de Gasto</title>
+<link rel="stylesheet" href="styles.css">
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B1622">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <header class="topbar">
+        <a href="index.html" class="wordmark">Lighthouse</a>
+        <button class="nav-toggle" id="navToggle" aria-controls="site-nav" aria-expanded="false">Menu</button>
+    </header>
+
+    <nav id="site-nav" class="site-nav">
+        <div class="nav-group">
+            <p class="nav-group-title">Painéis</p>
+            <a href="index.html">Tabela de Gastos</a>
+            <a href="rsgDash.html" class="active">Dashboard RSG</a>
+            <a href="gatilhos.html">Dashboard Inteligente</a>
+            <a href="dre.html">Despesas e Receitas</a>
+        </div>
+        <div class="nav-group">
+            <p class="nav-group-title">Lançar</p>
+            <a href="cadastro4.html">Cadastrar Despesa/Entrada</a>
+        </div>
+        <div class="nav-group">
+            <p class="nav-group-title">Relatórios</p>
+            <a href="monthlyExpenses.html">Gastos Mensais</a>
+            <a href="mastermonthly.html">Gastos Macro</a>
+            <a href="monthlyexpensestransfer.html">Transferências Mensais</a>
+            <a href="mastermonthlytransfer.html">Transferências Macro</a>
+            <a href="burnporsemana.html">Burn por Semana</a>
+            <a href="exportpdf.html">Exportar PDF</a>
+        </div>
+        <div class="nav-group">
+            <p class="nav-group-title">Outros</p>
+            <a href="debts.html">Dívidas</a>
+            <a href="game.html">InvestGame</a>
+            <a href="portfolio.html">Portfolio</a>
+        </div>
+    </nav>
+
+    <main>
+        <div class="form-header">
+            <h1>Dashboard RSG × Tipo de Gasto</h1>
+        </div>
+
+        <section class="hero-beacon" id="insightCard">
+            <!-- preenchido via JS -->
+        </section>
+
+        <section class="ledger-section">
+            <h2>Mapa de calor comportamental</h2>
+            <div class="ledger-wrap">
+                <table class="heatmap" id="heatmapTable"></table>
+            </div>
+        </section>
+
+        <section class="charts-section">
+            <h2>Distribuição visual</h2>
+            <div class="chart-card"><canvas id="bubbleChart" height="380"></canvas></div>
+        </section>
+    </main>
+
+    <script>
+        document.getElementById("navToggle").addEventListener("click", function () {
+            const nav = document.getElementById("site-nav");
+            const aberto = nav.classList.toggle("open");
+            this.setAttribute("aria-expanded", aberto);
+        });
+
+        const rsgLevels = ["1", "2", "3", "4", "5"];
+        const rsgEmojis = { "1": "😡", "2": "😕", "3": "🙂", "4": "😊", "5": "🤩" };
+        const rsgValencia = { "1": "baixa", "2": "baixa", "3": "media", "4": "alta", "5": "alta" };
+
+        const tiposGasto = [
+            "Planejado",
+            "Pequeno impulso",
+            "Grande impulso",
+            "Setback não-evitável",
+            "Setback evitável",
+            "Arrependimento"
+        ];
+
+        const tiposGastoAbrev = {
+            "Planejado": "Planejado",
+            "Pequeno impulso": "Peq. impulso",
+            "Grande impulso": "Gr. impulso",
+            "Setback não-evitável": "Setback N/E",
+            "Setback evitável": "Setback evit.",
+            "Arrependimento": "Arrependim."
+        };
+
+        function carregarDados() {
+            return JSON.parse(localStorage.getItem("despesas")) || [];
+        }
+
+        function gerarMatriz() {
+            const dados = carregarDados();
+            const matriz = {};
+            rsgLevels.forEach(r => {
+                matriz[r] = {};
+                tiposGasto.forEach(t => matriz[r][t] = 0);
+            });
+
+            dados.forEach(item => {
+                if (matriz[item.rsg] && matriz[item.rsg][item.tipoGasto] !== undefined) {
+                    matriz[item.rsg][item.tipoGasto]++;
+                }
+            });
+
+            return matriz;
+        }
+
+        function renderizarInsight(matriz) {
+            const container = document.getElementById("insightCard");
+            container.classList.remove("is-positive", "is-negative");
+
+            let totalGeral = 0;
+            let totalPlanejado = 0;
+            let maiorForaPlanejado = { rsg: null, tipo: null, count: 0 };
+
+            rsgLevels.forEach(r => {
+                tiposGasto.forEach(t => {
+                    const v = matriz[r][t];
+                    totalGeral += v;
+                    if (t === "Planejado") {
+                        totalPlanejado += v;
+                    } else if (v > maiorForaPlanejado.count) {
+                        maiorForaPlanejado = { rsg: r, tipo: t, count: v };
+                    }
+                });
+            });
+
+            if (totalGeral === 0) {
+                container.innerHTML = `
+                    <p class="hero-eyebrow">Padrão mais frequente</p>
+                    <p class="insight-empty">Ainda não há lançamentos com RSG e Tipo de Gasto preenchidos o suficiente
+                    pra revelar um padrão aqui. Esse dado só existe pros gastos que você cadastra manualmente
+                    (a base do CSV histórico não tem RSG). Cadastre alguns gastos com RSG pra começar a ver isso.</p>
+                `;
+                return;
+            }
+
+            const totalForaPlanejado = totalGeral - totalPlanejado;
+            const pctPlanejado = ((totalPlanejado / totalGeral) * 100).toFixed(0);
+
+            if (totalForaPlanejado === 0 || maiorForaPlanejado.count === 0) {
+                container.innerHTML = `
+                    <p class="hero-eyebrow">Padrão mais frequente</p>
+                    <p class="hero-value hero-value--text">${pctPlanejado}% planejado</p>
+                    <div class="beacon-bar"><div class="beacon-glow"></div></div>
+                    <p class="insight-meta">Praticamente todos os gastos com RSG registrado até agora foram planejados —
+                    nenhum padrão de impulso ou arrependimento se destacou ainda.</p>
+                `;
+                return;
+            }
+
+            const pct = ((maiorForaPlanejado.count / totalForaPlanejado) * 100).toFixed(0);
+
+            container.innerHTML = `
+                <p class="hero-eyebrow">Reação mais comum a gastos fora do planejado</p>
+                <span class="insight-emoji">${rsgEmojis[maiorForaPlanejado.rsg]}</span>
+                <p class="hero-value hero-value--text">${maiorForaPlanejado.tipo}</p>
+                <div class="beacon-bar"><div class="beacon-glow"></div></div>
+                <p class="insight-meta">${maiorForaPlanejado.count} ocorrência${maiorForaPlanejado.count === 1 ? '' : 's'} ·
+                ${pct}% dos gastos fora do planejado</p>
+                <p class="insight-submeta">${pctPlanejado}% de tudo que você registrou com RSG foi planejado</p>
+            `;
+        }
+
+        function renderizarHeatmap(matriz) {
+            const valores = rsgLevels.flatMap(r => tiposGasto.map(t => matriz[r][t]));
+            const maxLog = Math.log1p(Math.max(1, ...valores));
+
+            let html = `<thead><tr><th>RSG</th>`;
+            tiposGasto.forEach(t => html += `<th>${tiposGastoAbrev[t]}</th>`);
+            html += `</tr></thead><tbody>`;
+
+            rsgLevels.forEach(r => {
+                html += `<tr data-valencia="${rsgValencia[r]}"><th>${rsgEmojis[r]}<br>(${r})</th>`;
+                tiposGasto.forEach(t => {
+                    const v = matriz[r][t];
+                    const proporcao = v === 0 ? 0 : Math.log1p(v) / maxLog;
+                    const alpha = v === 0 ? 0.05 : 0.12 + proporcao * 0.7;
+                    const corTexto = proporcao > 0.55 ? "#21160a" : "var(--mist)";
+                    html += `<td class="heat-cell" style="background: rgba(244,185,66,${alpha}); color:${corTexto};">${v}</td>`;
+                });
+                html += `</tr>`;
+            });
+
+            html += `</tbody>`;
+            document.getElementById("heatmapTable").innerHTML = html;
+        }
+
+        function renderizarBubbleChart(matriz) {
+            const dataset = [];
+            const RAIO_MIN = 6;
+            const RAIO_MAX = 34;
+
+            const maiorValor = Math.max(
+                1, ...rsgLevels.flatMap(r => tiposGasto.map(t => matriz[r][t]))
+            );
+
+            const coresPorValencia = {
+                baixa: "rgba(240,101,91,0.7)",
+                media: "rgba(244,185,66,0.7)",
+                alta: "rgba(47,191,143,0.7)"
+            };
+
+            rsgLevels.forEach((r, yIndex) => {
+                tiposGasto.forEach((t, xIndex) => {
+                    const count = matriz[r][t];
+                    if (count > 0) {
+                        const proporcao = Math.sqrt(count / maiorValor);
+                        const raio = RAIO_MIN + (RAIO_MAX - RAIO_MIN) * proporcao;
+
+                        dataset.push({
+                            label: `${rsgEmojis[r]} / ${t}`,
+                            data: [{ x: xIndex, y: yIndex, r: raio }],
+                            backgroundColor: coresPorValencia[rsgValencia[r]]
+                        });
+                    }
+                });
+            });
+
+            new Chart(document.getElementById("bubbleChart"), {
+                type: "bubble",
+                data: { datasets: dataset },
+                options: {
+                    scales: {
+                        x: {
+                            min: -1,
+                            max: tiposGasto.length,
+                            ticks: {
+                                color: '#93A8B8',
+                                autoSkip: false,
+                                maxRotation: 55,
+                                minRotation: 55,
+                                font: { size: 10 },
+                                callback: (val) => tiposGasto[val] || ""
+                            },
+                            grid: { color: 'rgba(147,168,184,0.12)' }
+                        },
+                        y: {
+                            min: -1,
+                            max: rsgLevels.length,
+                            ticks: {
+                                color: '#93A8B8',
+                                callback: (val) => rsgEmojis[rsgLevels[val]] || ""
+                            },
+                            grid: { color: 'rgba(147,168,184,0.12)' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        function init() {
+            const matriz = gerarMatriz();
+            renderizarInsight(matriz);
+            renderizarHeatmap(matriz);
+            renderizarBubbleChart(matriz);
+        }
+
+        init();
+
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker.register("sw.js")
+                    .then((reg) => console.log("Service worker registrado:", reg.scope))
+                    .catch((err) => console.warn("Falha ao registrar service worker:", err));
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lighthouse — Controle de Finanças Pessoais</title>
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0B1622">
+    <link rel="icon" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <header class="topbar">
+        <a href="index.html" class="wordmark">Lighthouse</a>
+        <button class="nav-toggle" id="navToggle" aria-controls="site-nav" aria-expanded="false">Menu</button>
+    </header>
+
+    <nav id="site-nav" class="site-nav">
+        <div class="nav-group">
+            <p class="nav-group-title">Painéis</p>
+            <a href="index.html" class="active">Tabela de Gastos</a>
+            <a href="rsgDash.html">Dashboard RSG</a>
+            <a href="gatilhos.html">Dashboard Inteligente</a>
+            <a href="dre.html">Despesas e Receitas</a>
+        </div>
+        <div class="nav-group">
+            <p class="nav-group-title">Lançar</p>
+            <a href="cadastro4.html">Cadastrar Despesa/Entrada</a>
+        </div>
+        <div class="nav-group">
+            <p class="nav-group-title">Relatórios</p>
+            <a href="monthlyExpenses.html">Gastos Mensais</a>
+            <a href="mastermonthly.html">Gastos Macro</a>
+            <a href="monthlyexpensestransfer.html">Transferências Mensais</a>
+            <a href="mastermonthlytransfer.html">Transferências Macro</a>
+            <a href="burnporsemana.html">Burn por Semana</a>
+            <a href="exportpdf.html">Exportar PDF</a>
+        </div>
+        <div class="nav-group">
+            <p class="nav-group-title">Outros</p>
+            <a href="debts.html">Dívidas</a>
+            <a href="game.html">InvestGame</a>
+            <a href="portfolio.html">Portfolio</a>
+            <a href="index2.html">Dashboard antigo (index2)</a>
+        </div>
+    </nav>
+
+    <main>
+        <section class="hero-beacon" id="heroBeacon">
+            <p class="hero-eyebrow">Saldo do período</p>
+            <p class="hero-value" id="total-categorias">0,00</p>
+            <div class="beacon-bar"><div class="beacon-glow"></div></div>
+            <div class="stat-pills">
+                <div class="pill pill-in">
+                    <span>Entradas</span>
+                    <strong id="total-entradas">0,00</strong>
+                </div>
+                <div class="pill pill-out">
+                    <span>Saídas</span>
+                    <strong id="total-saidas">0,00</strong>
+                </div>
+            </div>
+        </section>
+
+        <details class="filter-panel">
+            <summary>Filtrar por período</summary>
+            <div class="filter-row">
+                <label>Data início
+                    <input type="date" id="data-inicio">
+                </label>
+                <label>Data fim
+                    <input type="date" id="data-fim">
+                </label>
+                <div class="filter-actions">
+                    <button class="btn-primary" onclick="atualizarTabela()">Filtrar</button>
+                </div>
+            </div>
+        </details>
+
+        <div class="category-columns">
+            <section class="category-section">
+                <h2>Entradas por categoria</h2>
+                <div id="cards-entradas" class="coast"></div>
+            </section>
+
+            <section class="category-section">
+                <h2>Saídas por categoria</h2>
+                <div id="cards-saidas" class="coast"></div>
+            </section>
+        </div>
+
+        <section class="ledger-section">
+            <h2>Lançamentos</h2>
+            <div class="ledger-wrap">
+                <table class="ledger">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Categoria</th>
+                            <th>Descrição</th>
+                            <th>Valor (R$)</th>
+                            <th>Tipo</th>
+                            <th>Saldo (R$)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-dados"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="charts-section">
+            <h2>Gráfico de entradas</h2>
+            <div class="chart-card"><canvas id="graficoEntradas" height="260"></canvas></div>
+            <h2>Gráfico de saídas</h2>
+            <div class="chart-card"><canvas id="graficoSaidas" height="260"></canvas></div>
+        </section>
+    </main>
+
+    <script>
+        document.getElementById("navToggle").addEventListener("click", function () {
+            const nav = document.getElementById("site-nav");
+            const aberto = nav.classList.toggle("open");
+            this.setAttribute("aria-expanded", aberto);
+        });
+
+        function carregarDespesas() {
+            return JSON.parse(localStorage.getItem("despesas")) || [];
+        }
+
+        function formatarMoeda(valor) {
+            return valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function atualizarTabela() {
+            const despesas = carregarDespesas();
+            const tabela = document.getElementById("tabela-dados");
+            const dataInicio = document.getElementById("data-inicio").value;
+            const dataFim = document.getElementById("data-fim").value;
+            tabela.innerHTML = "";
+
+            let totalEntradas = 0;
+            let totalSaidas = 0;
+            const somatorioCategoriasEntrada = {};
+            const somatorioCategoriasSaida = {};
+            let saldoAcumulado = 0;
+
+            const despesasFiltradas = despesas.filter(despesa => {
+                const dataDespesa = new Date(despesa.data);
+                const inicio = dataInicio ? new Date(dataInicio) : null;
+                const fim = dataFim ? new Date(dataFim) : null;
+                return (!inicio || dataDespesa >= inicio) && (!fim || dataDespesa <= fim);
+            });
+
+            despesasFiltradas.forEach(despesa => {
+                const row = document.createElement("tr");
+                row.setAttribute("data-tipo", despesa.tipo);
+
+                if (despesa.tipo === "Entrada") {
+                    totalEntradas += despesa.valor;
+                    saldoAcumulado += despesa.valor;
+                    somatorioCategoriasEntrada[despesa.categoria] = (somatorioCategoriasEntrada[despesa.categoria] || 0) + despesa.valor;
+                } else {
+                    totalSaidas += despesa.valor;
+                    saldoAcumulado -= despesa.valor;
+                    somatorioCategoriasSaida[despesa.categoria] = (somatorioCategoriasSaida[despesa.categoria] || 0) + despesa.valor;
+                }
+
+                row.innerHTML = `
+                    <td data-label="Data">${despesa.data}</td>
+                    <td data-label="Categoria">${despesa.categoria}</td>
+                    <td data-label="Descrição">${despesa.descricao}</td>
+                    <td data-label="Valor (R$)">${formatarMoeda(despesa.valor)}</td>
+                    <td data-label="Tipo">${despesa.tipo}</td>
+                    <td data-label="Saldo (R$)">${formatarMoeda(saldoAcumulado)}</td>
+                `;
+                tabela.appendChild(row);
+            });
+
+            document.getElementById("total-entradas").textContent = formatarMoeda(totalEntradas);
+            document.getElementById("total-saidas").textContent = formatarMoeda(Math.abs(totalSaidas));
+
+            const saldoTotal = totalEntradas - totalSaidas;
+            document.getElementById("total-categorias").textContent = formatarMoeda(saldoTotal);
+
+            const hero = document.getElementById("heroBeacon");
+            hero.classList.remove("is-positive", "is-negative");
+            hero.classList.add(saldoTotal >= 0 ? "is-positive" : "is-negative");
+
+            renderizarCoast("cards-entradas", somatorioCategoriasEntrada, "coast-in");
+            renderizarCoast("cards-saidas", somatorioCategoriasSaida, "coast-out");
+
+            criarGraficoEntradas(somatorioCategoriasEntrada);
+            criarGraficoSaidas(somatorioCategoriasSaida);
+        }
+
+        function renderizarCoast(containerId, somatorio, modificador) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = "";
+
+            const entradas = Object.entries(somatorio).sort(([, a], [, b]) => b - a);
+            const maior = entradas.length ? entradas[0][1] : 1;
+
+            entradas.forEach(([categoria, valor]) => {
+                const largura = Math.max((valor / maior) * 100, 3);
+                const row = document.createElement("div");
+                row.className = "coast-row " + modificador;
+                row.innerHTML = `
+                    <div class="coast-label">
+                        <span class="coast-name">${categoria}</span>
+                        <span class="coast-value">R$ ${formatarMoeda(valor)}</span>
+                    </div>
+                    <div class="coast-track">
+                        <div class="coast-fill" style="width:${largura}%"></div>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        function criarGraficoEntradas(categoriasEntrada) {
+            const ctx = document.getElementById("graficoEntradas").getContext("2d");
+            const categoriasOrdenadas = Object.entries(categoriasEntrada).sort(([, a], [, b]) => b - a);
+            const labels = categoriasOrdenadas.map(([categoria]) => categoria);
+            const valores = categoriasOrdenadas.map(([, valor]) => valor);
+
+            if (window._graficoEntradas) window._graficoEntradas.destroy();
+            window._graficoEntradas = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Entradas (R$)',
+                        data: valores,
+                        backgroundColor: '#2FBF8F',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    plugins: { legend: { labels: { color: '#93A8B8' } } },
+                    scales: {
+                        x: { ticks: { color: '#93A8B8' }, grid: { color: 'rgba(147,168,184,0.12)' } },
+                        y: { beginAtZero: true, ticks: { color: '#93A8B8' }, grid: { color: 'rgba(147,168,184,0.12)' } }
+                    }
+                }
+            });
+        }
+
+        function criarGraficoSaidas(categoriasSaida) {
+            const ctx = document.getElementById("graficoSaidas").getContext("2d");
+            const categoriasOrdenadas = Object.entries(categoriasSaida).sort(([, a], [, b]) => b - a);
+            const labels = categoriasOrdenadas.map(([categoria]) => categoria);
+            const valores = categoriasOrdenadas.map(([, valor]) => valor);
+
+            if (window._graficoSaidas) window._graficoSaidas.destroy();
+            window._graficoSaidas = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Saídas (R$)',
+                        data: valores,
+                        backgroundColor: '#F0655B',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    plugins: { legend: { labels: { color: '#93A8B8' } } },
+                    scales: {
+                        x: { ticks: { color: '#93A8B8' }, grid: { color: 'rgba(147,168,184,0.12)' } },
+                        y: { beginAtZero: true, ticks: { color: '#93A8B8' }, grid: { color: 'rgba(147,168,184,0.12)' } }
+                    }
+                }
+            });
+        }
+
+        window.onload = function () {
+            atualizarTabela();
+        };
+
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker.register("sw.js")
+                    .then((reg) => console.log("Service worker registrado:", reg.scope))
+                    .catch((err) => console.warn("Falha ao registrar service worker:", err));
+            });
+        }
+    </script>
+</body>
+</html>

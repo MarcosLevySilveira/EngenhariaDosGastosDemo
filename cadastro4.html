@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lighthouse — Gerenciar Despesas/Entradas</title>
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0B1622">
+    <link rel="icon" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
+    <script>
+        function getPeriodoDoDia(horario) {
+            if (!horario) return "-";
+            const hora = parseInt(horario.split(":")[0]);
+
+            if (hora >= 5 && hora < 12) return "Manhã";
+            if (hora >= 12 && hora < 18) return "Tarde";
+            if (hora >= 18 && hora < 24) return "Noite";
+            return "Madrugada";
+        }
+
+        function formatarMoeda(valor) {
+            return valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function saveData(event) {
+            event.preventDefault();
+
+            const valorInput = document.getElementById("valor").value.replace(",", ".");
+            const valor = parseFloat(valorInput);
+
+            if (isNaN(valor)) {
+                alert("Por favor, insira um valor válido.");
+                return;
+            }
+
+            const data = document.getElementById("data").value;
+            const horario = document.getElementById("horario").value;
+
+            const categoriaMaster = document.getElementById("categoriaMaster").value;
+            const categoria = document.getElementById("categoria").value;
+            const descricao = document.getElementById("descricao").value;
+            const tipo = document.getElementById("tipo").value;
+
+            const rsg = document.getElementById("rsg").value;
+            const tipoGasto = document.getElementById("tipoGasto").value;
+
+            const gatilho = document.getElementById("gatilho").value;
+            const sentimentoPos = document.getElementById("sentimentoPos").value;
+
+            const periodo = getPeriodoDoDia(horario);
+
+            const novaDespesa = {
+                data, horario, periodo,
+                categoriaMaster, categoria, descricao,
+                valor, tipo, rsg, tipoGasto, gatilho, sentimentoPos
+            };
+
+            let despesas = JSON.parse(localStorage.getItem("despesas")) || [];
+            despesas.push(novaDespesa);
+
+            localStorage.setItem("despesas", JSON.stringify(despesas));
+
+            alert("Cadastro realizado com sucesso!");
+            window.location.reload();
+        }
+
+        function loadData() {
+            const despesas = JSON.parse(localStorage.getItem("despesas")) || [];
+            const tableBody = document.getElementById("despesasList");
+            tableBody.innerHTML = "";
+
+            despesas.forEach((despesa, index) => {
+                const row = document.createElement("tr");
+                row.setAttribute("data-tipo", despesa.tipo);
+                row.innerHTML = `
+                  <td data-label="Data">${despesa.data}</td>
+                  <td data-label="Horário">${despesa.horario || "-"}</td>
+                  <td data-label="Período">${despesa.periodo || "-"}</td>
+                  <td data-label="Categoria Master">${despesa.categoriaMaster || "-"}</td>
+                  <td data-label="Micro-Categoria">${despesa.categoria}</td>
+                  <td data-label="Descrição">${despesa.descricao}</td>
+                  <td data-label="Valor (R$)">${formatarMoeda(despesa.valor)}</td>
+                  <td data-label="Tipo">${despesa.tipo}</td>
+                  <td data-label="RSG">${despesa.rsg || "-"}</td>
+                  <td data-label="Tipo de Gasto">${despesa.tipoGasto || "-"}</td>
+                  <td data-label="Gatilho Emocional">${despesa.gatilho || "-"}</td>
+                  <td data-label="Sentimento Pós">${despesa.sentimentoPos || "-"}</td>
+                  <td data-label="Ações">
+                      <div class="table-actions">
+                          <button class="btn-small btn-edit" onclick="editData(${index})">Editar</button>
+                          <button class="btn-small btn-delete" onclick="deleteData(${index})">Deletar</button>
+                      </div>
+                  </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function editData(index) {
+            const despesas = JSON.parse(localStorage.getItem("despesas"));
+            const despesa = despesas[index];
+
+            document.getElementById("data").value = despesa.data;
+            document.getElementById("horario").value = despesa.horario || "";
+            document.getElementById("categoriaMaster").value = despesa.categoriaMaster || "";
+            document.getElementById("categoria").value = despesa.categoria;
+            document.getElementById("descricao").value = despesa.descricao;
+            document.getElementById("valor").value = despesa.valor;
+            document.getElementById("tipo").value = despesa.tipo;
+
+            document.getElementById("rsg").value = despesa.rsg;
+            document.getElementById("tipoGasto").value = despesa.tipoGasto;
+
+            document.getElementById("gatilho").value = despesa.gatilho || "";
+            document.getElementById("sentimentoPos").value = despesa.sentimentoPos || "";
+
+            document.getElementById("saveBtn").onclick = function () {
+                updateData(index);
+            };
+
+            document.getElementById("formCadastro").scrollIntoView({ behavior: "smooth" });
+        }
+
+        function updateData(index) {
+            const valorInput = document.getElementById("valor").value.replace(",", ".");
+            const valor = parseFloat(valorInput);
+
+            if (isNaN(valor)) {
+                alert("Por favor, insira um valor válido.");
+                return;
+            }
+
+            const data = document.getElementById("data").value;
+            const horario = document.getElementById("horario").value;
+
+            const categoriaMaster = document.getElementById("categoriaMaster").value;
+            const categoria = document.getElementById("categoria").value;
+            const descricao = document.getElementById("descricao").value;
+            const tipo = document.getElementById("tipo").value;
+
+            const rsg = document.getElementById("rsg").value;
+            const tipoGasto = document.getElementById("tipoGasto").value;
+
+            const gatilho = document.getElementById("gatilho").value;
+            const sentimentoPos = document.getElementById("sentimentoPos").value;
+
+            const periodo = getPeriodoDoDia(horario);
+
+            const updatedDespesa = {
+                data, horario, periodo,
+                categoriaMaster, categoria, descricao,
+                valor, tipo, rsg, tipoGasto, gatilho, sentimentoPos
+            };
+
+            let despesas = JSON.parse(localStorage.getItem("despesas"));
+            despesas[index] = updatedDespesa;
+
+            localStorage.setItem("despesas", JSON.stringify(despesas));
+
+            alert("Cadastro atualizado com sucesso!");
+            window.location.reload();
+        }
+
+        function deleteData(index) {
+            let despesas = JSON.parse(localStorage.getItem("despesas"));
+            despesas.splice(index, 1);
+            localStorage.setItem("despesas", JSON.stringify(despesas));
+
+            alert("Cadastro deletado com sucesso!");
+            window.location.reload();
+        }
+
+        function initPage() {
+            loadData();
+        }
+
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker.register("sw.js")
+                    .then((reg) => console.log("Service worker registrado:", reg.scope))
+                    .catch((err) => console.warn("Falha ao registrar service worker:", err));
+            });
+        }
+    </script>
+</head>
+
+<body onload="initPage()">
+
+    <header class="topbar">
+        <a href="index.html" class="wordmark">Lighthouse</a>
+        <button class="nav-toggle" id="navToggle" aria-controls="site-nav" aria-expanded="false">Menu</button>
+    </header>
+
+    <nav id="site-nav" class="site-nav">
+        <div class="nav-group">
+            <p class="nav-group-title">Painéis</p>
+            <a href="index.html">Tabela de Gastos</a>
+            <a href="rsgDash.html">Dashboard RSG</a>
+            <a href="gatilhos.html">Dashboard Inteligente</a>
+            <a href="dre.html">Despesas e Receitas</a>
+        </div>
+        <div class="nav-group">
+            <p class="nav-group-title">Lançar</p>
+            <a href="cadastro4.html" class="active">Cadastrar Despesa/Entrada</a>
+        </div>
+        <div class="nav-group">
+            <p class="nav-group-title">Relatórios</p>
+            <a href="monthlyExpenses.html">Gastos Mensais</a>
+            <a href="mastermonthly.html">Gastos Macro</a>
+            <a href="monthlyexpensestransfer.html">Transferências Mensais</a>
+            <a href="mastermonthlytransfer.html">Transferências Macro</a>
+            <a href="burnporsemana.html">Burn por Semana</a>
+            <a href="exportpdf.html">Exportar PDF</a>
+        </div>
+        <div class="nav-group">
+            <p class="nav-group-title">Outros</p>
+            <a href="debts.html">Dívidas</a>
+            <a href="game.html">InvestGame</a>
+            <a href="portfolio.html">Portfolio</a>
+        </div>
+    </nav>
+
+    <main>
+        <div class="form-header">
+            <h1>Cadastrar Nova Despesa/Entrada</h1>
+        </div>
+
+        <form id="formCadastro" onsubmit="saveData(event)">
+
+            <label for="data">Data</label>
+            <input type="date" id="data" required>
+
+            <label for="horario">Horário</label>
+            <input type="time" id="horario" required>
+
+            <label for="categoriaMaster">Categoria Master</label>
+            <select id="categoriaMaster" required>
+                <option value="Moradia">Moradia</option>
+                <option value="Transporte">Transporte</option>
+                <option value="Alimentação">Alimentação</option>
+                <option value="Despesas de Viagem a Trabalho">Despesas de Viagem a Trabalho</option>
+                <option value="Tráfego Pago">Tráfego Pago</option>
+                <option value="Cartão de Crédito">Cartão de Crédito</option>
+                <option value="Conexão e prazer">Conexão e Prazer</option>
+                <option value="Evento único">Evento único</option>
+                <option value="Saúde">Saúde</option>
+                <option value="Salário">Salário</option>
+                <option value="Educação">Educação</option>
+                <option value="Lazer">Lazer</option>
+                <option value="Transferência">Transferência</option>
+                <option value="Investimentos">Investimentos</option>
+                <option value="Dívidas e Obrigações">Dívidas e Obrigações</option>
+                <option value="Pets">Pets</option>
+                <option value="Pessoal">Pessoal</option>
+            </select>
+
+            <label for="categoria">Micro-Categoria</label>
+            <select id="categoria" required>
+                <option value="Água">Água</option>
+                <option value="Air BNB">Air BNB</option>
+                <option value="Aluguel">Aluguel</option>
+                <option value="Aluguel Imovel 2">Aluguel (Imóvel 2)</option>
+                <option value="Aluguel Imovel 3">Aluguel (Imóvel 3)</option>
+                <option value="Aluguel Imovel 4">Aluguel (Imóvel 4)</option>
+                <option value="Alvará">Alvará</option>
+                <option value="Amazon">Amazon</option>
+                <option value="Assinaturas de aplicativos">Assinaturas de aplicativos</option>
+                <option value="Cartão de Crédito">Cartão de Crédito</option>
+                <option value="Bitcoin">Bitcoin</option>
+                <option value="Boliche">Boliche</option>
+                <option value="Bolos">Bolos</option>
+                <option value="Caixinha Nubank">Caixinha Nubank</option>
+                <option value="Caixinha Nubank - Aluguel">Caixinha Nubank - Rendimentos Aluguel</option>
+                <option value="Caixinha Nubank - Meta 2">Caixinha Nubank - Meta 2</option>
+                <option value="Claude AI">Claude AI</option>
+                <option value="Aporte em Investimentos">Aporte em Investimentos</option>
+                <option value="Rendimentos de Investimentos">Rendimentos de Investimentos</option>
+                <option value="Consórcio">Consórcio</option>
+                <option value="Calçados">Calçados</option>
+                <option value="Contador">Contador</option>
+                <option value="Congressos">Congressos</option>
+                <option value="Cursos">Cursos</option>
+                <option value="Celular BR">Celular BR</option>
+                <option value="Celular CA">Celular CA</option>
+                <option value="Chocolateria">Chocolateria</option>
+                <option value="Cinema">Cinema</option>
+                <option value="Coffe Shop">Coffee Shop</option>
+                <option value="Cosméticos">Cosméticos</option>
+                <option value="Delivery Food">Delivery Food</option>
+                <option value="Diarista">Diarista</option>
+                <option value="Distribuidora">Distribuidora</option>
+                <option value="Dízimo">Dízimo</option>
+                <option value="Doceria">Doceria</option>
+                <option value="Drogaria">Drogaria</option>
+                <option value="Educação">Educação</option>
+                <option value="Eletrônicos">Eletrônicos</option>
+                <option value="Empréstimos">Empréstimos</option>
+                <option value="Exames e concursos">Exames e concursos</option>
+                <option value="Faculdade">Faculdade</option>
+                <option value="Férias">Férias</option>
+                <option value="Financiamento Imobiliario">Financiamento Imobiliário</option>
+                <option value="FGTS">FGTS</option>
+                <option value="FIES">FIES</option>
+                <option value="F1 game">F1 game</option>
+                <option value="F1 TV">F1 TV</option>
+                <option value="Games">Games</option>
+                <option value="Impostos">Impostos</option>
+                <option value="Impostos PJ">Impostos PJ</option>
+                <option value="Impostos PJ Simples Nacional">Impostos PJ Simples Nacional</option>
+                <option value="Insumos para Produção">Insumos para Produção</option>
+                <option value="Internet">Internet</option>
+                <option value="Investimentos">Investimentos</option>
+                <option value="IPVA">IPVA</option>
+                <option value="IPTU">IPTU</option>
+                <option value="Hospedagens AIRBNB">Hospedagens/AIRBNB</option>
+                <option value="Lavanderia">Lavanderia</option>
+                <option value="Lava-jato">Lava-jato</option>
+                <option value="Lanche e Fast-food">Lanche e Fast-food</option>
+                <option value="Livros">Livros</option>
+                <option value="Limpeza">Limpeza</option>
+                <option value="Luz">Luz</option>
+                <option value="Manutenção Casa">Manutenção Casa</option>
+                <option value="Manutenção do Carro">Manutenção do Carro</option>
+                <option value="META Ads">META Ads</option>
+                <option value="Metrô">Metrô</option>
+                <option value="Mobília e utensílios">Mobília e utensílios</option>
+                <option value="Ofertas">Ofertas</option>
+                <option value="Óticas">Óticas</option>
+                <option value="Padaria">Padaria</option>
+                <option value="Papelaria">Papelaria</option>
+                <option value="Passagem aérea">Passagem aérea</option>
+                <option value="Plano de Saúde">Plano de Saúde</option>
+                <option value="PLR">PLR</option>
+                <option value="Pensão">Pensão</option>
+                <option value="Pet Shop">Pet Shop</option>
+                <option value="PIX Conta PJ">PIX Conta PJ</option>
+                <option value="PIX Conjuge">PIX Cônjuge/Parceiro(a)</option>
+                <option value="PIX Familia">PIX Família</option>
+                <option value="Passeios e expedições">Passeios e expedições</option>
+                <option value="Poupança">Poupança</option>
+                <option value="Pós-Graduação">Pós-Graduação</option>
+                <option value="Posto de Gasolina">Posto de Gasolina</option>
+                <option value="Presentes">Presentes</option>
+                <option value="Renovar CNH">Renovar CNH</option>
+                <option value="Renovar visto">Renovar visto</option>
+                <option value="Restaurantes">Restaurantes</option>
+                <option value="Reembolso de despesas">Reembolso de despesas</option>
+                <option value="Roupas">Roupas</option>
+                <option value="Salário">Salário</option>
+                <option value="Serasa">Serasa</option>
+                <option value="Salão de beleza">Salão de beleza</option>
+                <option value="Seguro desemprego">Seguro desemprego</option>
+                <option value="Seguro do Carro">Seguro do Carro</option>
+                <option value="Shopping">Shopping</option>
+                <option value="Show">Show</option>
+                <option value="Sorveteria">Sorveteria</option>
+                <option value="Spotify">Spotify</option>
+                <option value="Supermercado">Supermercado</option>
+                <option value="Taxas gerais">Taxas gerais</option>
+                <option value="Taxas do Imovel">Taxas do Imóvel</option>
+                <option value="Taxas do Imovel 2">Taxas do Imóvel 2</option>
+                <option value="Taxas do Imovel 3">Taxas do Imóvel 3</option>
+                <option value="Taxas do Imovel 4">Taxas do Imóvel 4</option>
+                <option value="Tik Tok Ads">Tik Tok Ads</option>
+                <option value="Uber">Uber</option>
+                <option value="Vale-Alimentação">Vale-Alimentação</option>
+                <option value="Vale-Transporte">Vale-Transporte</option>
+                <option value="Vestuário">Vestuário</option>
+                <option value="Vestuário Conjuge">Vestuário Cônjuge/Parceiro(a)</option>
+                <option value="Veterinário">Veterinário</option>
+            </select>
+
+            <label for="descricao">Descrição</label>
+            <input type="text" id="descricao" required>
+
+            <label for="valor">Valor (R$)</label>
+            <input type="text" id="valor" required>
+
+            <label for="tipo">Tipo</label>
+            <select id="tipo" required>
+                <option value="Entrada">Entrada</option>
+                <option value="Saída">Saída</option>
+                <option value="Transferência">Transferência</option>
+            </select>
+
+            <label for="rsg">RSG (Retorno Sobre Gasto)</label>
+            <select id="rsg" required>
+                <option value="1">1 😡</option>
+                <option value="2">2 😕</option>
+                <option value="3">3 🙂</option>
+                <option value="4">4 😊</option>
+                <option value="5">5 🤩</option>
+            </select>
+
+            <label for="tipoGasto">Tipo de Gasto</label>
+            <select id="tipoGasto" required>
+                <option value="Arrependimento">Arrependimento</option>
+                <option value="Planejado">Planejado</option>
+                <option value="Pequeno impulso">Pequeno impulso</option>
+                <option value="Grande impulso">Grande impulso</option>
+                <option value="Setback não-evitável">Setback não-evitável</option>
+                <option value="Setback evitável">Setback evitável</option>
+                <option value="Sonho de vida">Sonho de vida</option>
+            </select>
+
+            <!-- GATILHO EMOCIONAL -->
+            <label for="gatilho">Gatilho Emocional</label>
+            <select id="gatilho" required>
+                <!-- 🔧 Estrutural / Base da vida -->
+                <option value="Manutenção da vida (contas fixas)">Manutenção da vida (contas fixas)</option>
+                <option value="Organização financeira (transferências / investimentos)">Organização financeira
+                    (transferências / investimentos)</option>
+                <option value="Compromissos legais/obrigatórios">Compromissos legais/obrigatórios</option>
+
+                <!-- 🔄 Correção / Ajuste -->
+                <option value="Correção de planejamento">Correção de planejamento</option>
+                <option value="Cobertura de custo não provisionado">Cobertura de custo não provisionado</option>
+                <option value="Rebalanceamento financeiro">Rebalanceamento financeiro</option>
+
+                <!-- 🍽️ Rotina / Hábito -->
+                <option value="Rotina alimentar">Rotina alimentar</option>
+                <option value="Hábito consolidado">Hábito consolidado</option>
+                <option value="Consumo por contexto (horário/local)">Consumo por contexto (horário/local)</option>
+
+                <!-- ⚡ Eficiência / Conveniência -->
+                <option value="Redução de esforço (comodidade)">Redução de esforço (comodidade)</option>
+                <option value="Economia de tempo">Economia de tempo</option>
+                <option value="Decisão automática (baixo esforço)">Decisão automática (baixo esforço)</option>
+
+                <!-- 🎯 Recompensa / Prazer -->
+                <option value="Pequena recompensa">Pequena recompensa</option>
+                <option value="Prazer rotineiro">Prazer rotineiro</option>
+                <option value="Quebra de rotina">Quebra de rotina</option>
+                <option value="Recompensa">Recompensa</option>
+
+                <!-- 👥 Social / Relacional -->
+                <option value="Agradar parceiro">Agradar parceiro</option>
+                <option value="Ajudar alguém">Ajudar alguém</option>
+                <option value="Apoio financeiro a parente">Apoio financeiro a parente</option>
+                <option value="Pedido de familiar - esposa">Pedido de familiar - esposa</option>
+                <option value="Pedido de familiar - parentes">Pedido de familiar - parentes</option>
+                <option value="Pedido de PIX">Pedido de PIX</option>
+                <option value="Evitar conflito familiar">Evitar conflito familiar</option>
+                <option value="Evitar discussão com parceiro">Evitar discussão com parceiro</option>
+                <option value="Pressão social de amigos">Pressão social de amigos</option>
+                <option value="Manter pertencimento ao grupo">Manter pertencimento ao grupo</option>
+                <option value="Divisão de contas inesperada">Divisão de contas inesperada</option>
+                <option value="Convite inesperado de amigos">Convite inesperado de amigos</option>
+                <option value="Networking">Networking</option>
+
+                <!-- 🎉 Eventos / Ocasiões -->
+                <option value="Comemorações">Comemorações</option>
+                <option value="Confraternizações">Confraternizações</option>
+                <option value="Eventos">Eventos</option>
+                <option value="Presentes e celebrações">Presentes e celebrações</option>
+
+                <!-- 🧠 Emocional -->
+                <option value="Ansiedade">Ansiedade</option>
+                <option value="Stress">Stress</option>
+                <option value="Tristeza">Tristeza</option>
+                <option value="Frustração">Frustração</option>
+                <option value="Tédio">Tédio</option>
+                <option value="Cansaço">Cansaço</option>
+                <option value="Emoção positiva (celebração)">Emoção positiva (celebração)</option>
+
+                <!-- 💼 Trabalho / Profissional -->
+                <option value="Pressão no trabalho">Pressão no trabalho</option>
+                <option value="Imagem profissional">Imagem profissional</option>
+                <option value="Estar bem vestido">Estar bem vestido</option>
+
+                <!-- 📲 Influência externa -->
+                <option value="Influência digital">Influência digital</option>
+                <option value="Indicação de influencer">Indicação de influencer</option>
+                <option value="Promoção enviada">Promoção enviada</option>
+
+                <!-- 🍔 Situações específicas -->
+                <option value="Almoço no trabalho">Almoço no trabalho</option>
+                <option value="Transporte para trabalho">Transporte para trabalho</option>
+                <option value="Fome fora de hora">Fome fora de hora</option>
+                <option value="Doença">Doença</option>
+                <option value="Preguiça de cozinhar ou enjoo">Preguiça de cozinhar ou enjoo</option>
+
+                <!-- 🚨 Exceções / imprevistos -->
+                <option value="Problema imprevisto de terceiros">Problema imprevisto de terceiros</option>
+                <option value="Urgência familiar">Urgência familiar</option>
+                <option value="Empréstimo inesperado">Empréstimo inesperado</option>
+                <option value="Favor financeiro">Favor financeiro</option>
+
+                <!-- 📌 Controle -->
+                <option value="Falta de planejamento">Falta de planejamento</option>
+                <option value="Não identificado (revisar depois)">Não identificado (revisar depois)</option>
+            </select>
+
+            <!-- NOVO CAMPO: SENTIMENTO PÓS-PAGAMENTO -->
+            <label for="sentimentoPos">Sentimento Pós-Pagamento</label>
+            <select id="sentimentoPos" required>
+                <option value="Muito satisfeito">Muito satisfeito</option>
+                <option value="Satisfeito">Satisfeito</option>
+                <option value="Neutro">Neutro</option>
+                <option value="Orgulhoso">Orgulhoso</option>
+                <option value="Aliviado">Aliviado</option>
+                <option value="Leve arrependimento">Leve arrependimento</option>
+                <option value="Arrependido">Arrependido</option>
+                <option value="Culpado">Culpado</option>
+                <option value="Ansioso">Ansioso</option>
+                <option value="Preocupado">Preocupado</option>
+                <option value="Incomodado">Incomodado</option>
+            </select>
+
+            <button type="submit" id="saveBtn">Salvar</button>
+        </form>
+
+        <section class="ledger-section">
+            <h2>Lançamentos cadastrados</h2>
+            <div class="ledger-wrap">
+                <table class="ledger">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Horário</th>
+                            <th>Período</th>
+                            <th>Categoria Master</th>
+                            <th>Micro-Categoria</th>
+                            <th>Descrição</th>
+                            <th>Valor</th>
+                            <th>Tipo</th>
+                            <th>RSG</th>
+                            <th>Tipo de Gasto</th>
+                            <th>Gatilho Emocional</th>
+                            <th>Sentimento Pós</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="despesasList"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        document.getElementById("navToggle").addEventListener("click", function () {
+            const nav = document.getElementById("site-nav");
+            const aberto = nav.classList.toggle("open");
+            this.setAttribute("aria-expanded", aberto);
+        });
+    </script>
+
+</body>
+
+</html>

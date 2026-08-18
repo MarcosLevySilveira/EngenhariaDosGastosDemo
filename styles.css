@@ -1,0 +1,1032 @@
+/* ==========================================================================
+   Lighthouse — Controle de Finanças Pessoais
+   Sistema de tokens: um farol guiando através da neblina dos gastos.
+   Fundo "mar noturno", feixe âmbar como acento de destaque, maré verde
+   para entradas, coral para saídas.
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,680&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root {
+    --bg: #0B1622;
+    --surface: #12283B;
+    --surface-alt: #0E2030;
+    --surface-raised: #1A3550;
+    --beacon: #F4B942;
+    --beacon-soft: rgba(244, 185, 66, 0.16);
+    --tide: #2FBF8F;
+    --tide-soft: rgba(47, 191, 143, 0.14);
+    --coral: #F0655B;
+    --coral-soft: rgba(240, 101, 91, 0.14);
+    --fog: #93A8B8;
+    --mist: #DCE6EC;
+    --line: rgba(147, 168, 184, 0.16);
+
+    --font-display: 'Fraunces', Georgia, serif;
+    --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+    --radius: 14px;
+    --radius-sm: 8px;
+    --container: 720px;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--mist);
+    font-family: var(--font-body);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        transition-duration: 0.001ms !important;
+    }
+}
+
+a {
+    color: inherit;
+}
+
+h1, h2, h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    margin: 0;
+}
+
+button, input, select {
+    font-family: inherit;
+    font-size: inherit;
+}
+
+:focus-visible {
+    outline: 2px solid var(--beacon);
+    outline-offset: 2px;
+}
+
+/* ---------- Topbar ---------- */
+
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: var(--surface-alt);
+    border-bottom: 1px solid var(--line);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+}
+
+.wordmark {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 680;
+    letter-spacing: 0.01em;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--mist);
+}
+
+.wordmark::before {
+    content: "";
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--beacon);
+    box-shadow: 0 0 0 4px var(--beacon-soft);
+}
+
+.nav-toggle {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--mist);
+    border-radius: var(--radius-sm);
+    padding: 8px 14px;
+    cursor: pointer;
+}
+
+.site-nav {
+    display: none;
+    flex-direction: column;
+    background: var(--surface-alt);
+    border-bottom: 1px solid var(--line);
+    position: sticky;
+    top: 57px;
+    z-index: 19;
+}
+
+.site-nav.open {
+    display: flex;
+    max-height: calc(100vh - 57px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.site-nav a {
+    display: block;
+    padding: 12px 20px;
+    text-decoration: none;
+    font-size: 0.92rem;
+    color: var(--fog);
+    border-top: 1px solid var(--line);
+}
+
+.site-nav a.active {
+    color: var(--beacon);
+    font-weight: 600;
+}
+
+.nav-group-title {
+    padding: 14px 20px 4px;
+    margin: 0;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--beacon);
+    border-top: 1px solid var(--line);
+}
+
+.nav-group:first-child .nav-group-title {
+    border-top: none;
+}
+
+.nav-group a:first-of-type {
+    border-top: none;
+}
+
+/* ---------- Layout base ---------- */
+
+main {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 20px 16px 64px;
+}
+
+section {
+    margin-top: 36px;
+}
+
+section h2 {
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--fog);
+    font-family: var(--font-body);
+    font-weight: 600;
+    margin-bottom: 14px;
+}
+
+/* ---------- Hero / Beacon ---------- */
+
+.hero-beacon {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 28px 22px 22px;
+    text-align: center;
+    margin-top: 24px;
+}
+
+.hero-eyebrow {
+    margin: 0 0 6px;
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--fog);
+}
+
+.hero-value {
+    font-family: var(--font-mono);
+    font-size: clamp(2.1rem, 9vw, 3rem);
+    font-weight: 500;
+    margin: 0;
+    color: var(--mist);
+    letter-spacing: -0.02em;
+}
+
+.hero-beacon.is-positive .hero-value { color: var(--tide); }
+.hero-beacon.is-negative .hero-value { color: var(--coral); }
+
+.beacon-bar {
+    position: relative;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--surface-raised);
+    margin: 18px 0 22px;
+    overflow: hidden;
+}
+
+.beacon-glow {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, var(--beacon), transparent);
+    width: 40%;
+    animation: sweep 3.6s ease-in-out infinite;
+}
+
+.hero-beacon.is-positive .beacon-glow {
+    background: linear-gradient(90deg, transparent, var(--tide), transparent);
+}
+.hero-beacon.is-negative .beacon-glow {
+    background: linear-gradient(90deg, transparent, var(--coral), transparent);
+}
+
+@keyframes sweep {
+    0%   { transform: translateX(-120%); }
+    50%  { transform: translateX(160%); }
+    100% { transform: translateX(160%); }
+}
+
+.stat-pills {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.pill {
+    border-radius: var(--radius-sm);
+    padding: 12px 10px;
+    text-align: left;
+}
+
+.pill span {
+    display: block;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--fog);
+    margin-bottom: 4px;
+}
+
+.pill strong {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.pill-in {
+    background: var(--tide-soft);
+}
+.pill-in strong {
+    color: var(--tide);
+}
+
+.pill-out {
+    background: var(--coral-soft);
+}
+.pill-out strong {
+    color: var(--coral);
+}
+
+/* ---------- Filtro ---------- */
+
+.filter-panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 4px 18px;
+}
+
+.filter-panel summary {
+    cursor: pointer;
+    padding: 14px 0;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--mist);
+    list-style: none;
+}
+
+.filter-panel summary::-webkit-details-marker {
+    display: none;
+}
+
+.filter-panel summary::after {
+    content: "▾";
+    float: right;
+    color: var(--fog);
+}
+
+.filter-panel[open] summary::after {
+    content: "▴";
+}
+
+.filter-row {
+    padding: 4px 0 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.filter-row label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--fog);
+}
+
+.filter-row input[type="date"] {
+    background: var(--surface-alt);
+    border: 1px solid var(--line);
+    color: var(--mist);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+}
+
+.filter-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+button.btn-primary,
+.filter-actions button:first-child {
+    background: var(--beacon);
+    color: #21160a;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 10px 16px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-ghost {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--mist);
+    border-radius: var(--radius-sm);
+    padding: 10px 16px;
+    cursor: pointer;
+}
+
+/* ---------- Categorias — barras "linha do horizonte" ---------- */
+
+.coast {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.coast-row {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+}
+
+.coast-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.coast-name {
+    font-size: 0.88rem;
+    color: var(--mist);
+}
+
+.coast-value {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--fog);
+    white-space: nowrap;
+}
+
+.coast-track {
+    height: 8px;
+    border-radius: 999px;
+    background: var(--surface-alt);
+    overflow: hidden;
+}
+
+.coast-fill {
+    height: 100%;
+    border-radius: 999px;
+}
+
+.coast-in .coast-fill {
+    background: var(--tide);
+}
+
+.coast-out .coast-fill {
+    background: var(--coral);
+}
+
+/* ---------- Lançamentos ---------- */
+
+.ledger-wrap {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.btn-small {
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 0.76rem;
+    cursor: pointer;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--mist);
+}
+
+.btn-small.btn-edit {
+    border-color: var(--beacon);
+    color: var(--beacon);
+}
+
+.btn-small.btn-delete {
+    border-color: var(--coral);
+    color: var(--coral);
+}
+
+.form-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 24px;
+}
+
+.form-header h1 {
+    font-size: 1.3rem;
+}
+
+table.ledger {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+table.ledger thead {
+    display: none;
+}
+
+table.ledger tbody tr {
+    display: block;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line);
+}
+
+table.ledger tbody tr:last-child {
+    border-bottom: none;
+}
+
+table.ledger td {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 3px 0;
+    font-size: 0.86rem;
+    border: none;
+}
+
+table.ledger td::before {
+    content: attr(data-label);
+    color: var(--fog);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+}
+
+table.ledger td[data-label="Valor (R$)"],
+table.ledger td[data-label="Saldo (R$)"] {
+    font-family: var(--font-mono);
+}
+
+table.ledger tr[data-tipo="Entrada"] td[data-label="Valor (R$)"] {
+    color: var(--tide);
+}
+table.ledger tr[data-tipo="Saída"] td[data-label="Valor (R$)"] {
+    color: var(--coral);
+}
+
+/* ---------- Gráficos ---------- */
+
+.chart-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 14px 10px 6px;
+    margin-bottom: 20px;
+}
+
+.chart-card canvas {
+    width: 100% !important;
+    height: auto !important;
+}
+
+/* ---------- Modificador: tabela sempre em grade (não empilha no celular) ----------
+   Usar quando comparar colunas lado a lado (ex: meses) importa mais do que
+   economizar espaço vertical. Aplica em qualquer largura de tela. */
+
+table.ledger.ledger--grid thead {
+    display: table-header-group;
+}
+
+table.ledger.ledger--grid tbody tr {
+    display: table-row;
+    padding: 0;
+}
+
+table.ledger.ledger--grid td {
+    display: table-cell;
+    padding: 10px 14px;
+    white-space: nowrap;
+}
+
+table.ledger.ledger--grid td::before {
+    content: none;
+}
+
+table.ledger.ledger--grid thead th {
+    text-align: left;
+    padding: 12px 14px;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--fog);
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+}
+
+/* ---------- Linhas expansíveis (master / subcategoria) ---------- */
+
+.hint-text {
+    color: var(--fog);
+    font-size: 0.82rem;
+    margin: 8px 0 16px;
+}
+
+table.ledger tr.row-master {
+    background: var(--surface-raised);
+    cursor: pointer;
+    user-select: none;
+}
+
+table.ledger tr.row-master td {
+    font-weight: 600;
+    color: var(--mist);
+}
+
+table.ledger tr.row-master:active {
+    background: var(--surface-alt);
+}
+
+table.ledger tr.row-sub td:first-child {
+    padding-left: 30px;
+    color: var(--fog);
+}
+
+table.ledger tr.hidden,
+table.ledger.ledger--grid tr.hidden {
+    display: none;
+}
+
+.chevron {
+    display: inline-block;
+    margin-right: 8px;
+    transition: transform 0.15s ease;
+    color: var(--beacon);
+}
+
+tr.row-master.is-open .chevron {
+    transform: rotate(90deg);
+}
+
+.positivo {
+    color: var(--coral);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+}
+
+.negativo {
+    color: var(--tide);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+}
+
+tfoot td {
+    background: var(--surface-alt);
+    font-weight: 600;
+    color: var(--mist);
+    border-top: 2px solid var(--line);
+}
+
+/* ---------- DRE (Demonstração do Resultado) ----------
+   Estrutura própria (não usa .ledger/.ledger--grid): cada linha é um único
+   <td colspan="2"> com um flex-row dentro. Isso garante que nunca precise
+   de scroll lateral, mesmo com categorias de nome longo ou botão "Ver itens". */
+
+table.dre-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+table.dre-table tbody tr {
+    border-bottom: 1px solid var(--line);
+}
+
+table.dre-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+table.dre-table td {
+    border: none;
+    padding: 0;
+}
+
+.dre-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px 12px;
+    padding: 12px 14px;
+}
+
+.dre-row-label {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 0.9rem;
+    color: var(--mist);
+}
+
+.dre-row-value {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    color: var(--mist);
+    white-space: nowrap;
+}
+
+tr.dre-total .dre-row {
+    background: var(--surface-raised);
+}
+
+tr.dre-total .dre-row-label,
+tr.dre-total .dre-row-value {
+    font-weight: 600;
+}
+
+tr.dre-total.is-positive .dre-row-value { color: var(--tide); }
+tr.dre-total.is-negative .dre-row-value { color: var(--coral); }
+
+tr.dre-memo .dre-row {
+    background: var(--surface-alt);
+}
+
+tr.dre-memo .dre-row-label,
+tr.dre-memo .dre-row-value {
+    font-style: italic;
+    color: var(--fog);
+    font-size: 0.85rem;
+}
+
+tr.dre-items-row td {
+    background: var(--surface-alt);
+    padding: 0 14px 14px;
+}
+
+ul.dre-itens {
+    display: none;
+    flex-direction: column;
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+}
+
+ul.dre-itens li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--surface-raised);
+    font-size: 0.82rem;
+    color: var(--fog);
+}
+
+ul.dre-itens li:last-child { border-bottom: none; }
+
+ul.dre-itens .valor-mono {
+    font-family: var(--font-mono);
+    color: var(--mist);
+    white-space: nowrap;
+}
+
+.btn-toggle-itens {
+    background: transparent;
+    border: 1px solid var(--beacon);
+    color: var(--beacon);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 0.72rem;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+/* ---------- Dashboard Inteligente (gatilhos.html) ---------- */
+
+.range-controls {
+    display: flex;
+    gap: 8px;
+    margin: 16px 0 20px;
+    flex-wrap: wrap;
+}
+
+.range-btn {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--fog);
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 0.82rem;
+    cursor: pointer;
+}
+
+.range-btn.active {
+    background: var(--beacon);
+    border-color: var(--beacon);
+    color: #21160a;
+    font-weight: 600;
+}
+
+.insight-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+}
+
+.insight-card-box {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+}
+
+.insight-card-box h3 {
+    font-family: var(--font-body);
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: var(--mist);
+    margin: 0 0 8px;
+}
+
+.insight-card-value {
+    font-family: var(--font-mono);
+    font-size: 0.92rem;
+    color: var(--beacon);
+    margin: 0;
+    line-height: 1.5;
+}
+
+.insight-card-caption {
+    display: block;
+    font-family: var(--font-body);
+    font-size: 0.76rem;
+    color: var(--fog);
+    margin-top: 4px;
+}
+
+.insight-card-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.insight-card-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--surface-alt);
+    font-size: 0.85rem;
+    color: var(--mist);
+}
+
+.insight-card-list li:last-child { border-bottom: none; }
+
+.insight-card-list .valor-mono {
+    font-family: var(--font-mono);
+    color: var(--fog);
+    white-space: nowrap;
+}
+
+/* ---------- Insight card (padrão em destaque) ---------- */
+
+.hero-value--text {
+    font-size: clamp(1.35rem, 6.5vw, 2rem);
+    line-height: 1.25;
+}
+
+.insight-emoji {
+    font-size: 2.6rem;
+    line-height: 1;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.insight-meta {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    color: var(--beacon);
+    margin: 0;
+}
+
+.insight-submeta {
+    font-size: 0.78rem;
+    color: var(--fog);
+    margin: 6px 0 0;
+}
+
+.insight-empty {
+    color: var(--fog);
+    font-size: 0.92rem;
+    max-width: 42ch;
+    margin: 0 auto;
+}
+
+/* ---------- Heatmap comportamental (RSG × Tipo de Gasto) ---------- */
+
+table.heatmap {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+table.heatmap th,
+table.heatmap td {
+    padding: 12px 10px;
+    text-align: center;
+    font-size: 0.82rem;
+    border: 1px solid var(--surface-alt);
+    white-space: nowrap;
+}
+
+table.heatmap thead th {
+    color: var(--fog);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+}
+
+table.heatmap tbody th {
+    color: var(--mist);
+    font-size: 1rem;
+    background: var(--surface);
+    border-left: 3px solid var(--fog);
+}
+
+table.heatmap tbody tr[data-valencia="baixa"] th {
+    border-left-color: var(--coral);
+}
+table.heatmap tbody tr[data-valencia="media"] th {
+    border-left-color: var(--beacon);
+}
+table.heatmap tbody tr[data-valencia="alta"] th {
+    border-left-color: var(--tide);
+}
+
+table.heatmap td.heat-cell {
+    font-family: var(--font-mono);
+    color: var(--mist);
+}
+
+/* ---------- Telas maiores ---------- */
+
+
+@media (min-width: 640px) {
+    .nav-toggle {
+        display: none;
+    }
+
+    .site-nav {
+        display: flex !important;
+        flex-direction: column;
+        position: static;
+        max-width: 360px;
+    }
+}
+
+@media (min-width: 720px) {
+    main {
+        max-width: 960px;
+    }
+
+    .hero-value {
+        font-size: 3.4rem;
+    }
+
+    .category-columns {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .insight-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    table.ledger thead {
+        display: table-header-group;
+    }
+
+    table.ledger tbody tr {
+        display: table-row;
+        padding: 0;
+    }
+
+    table.ledger td {
+        display: table-cell;
+        padding: 10px 14px;
+    }
+
+    table.ledger td::before {
+        content: none;
+    }
+
+    table.ledger thead th {
+        text-align: left;
+        padding: 12px 14px;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--fog);
+        border-bottom: 1px solid var(--line);
+    }
+}
+
+/* ---------- Formulário de cadastro (cadastro4.html) ---------- */
+
+form#formCadastro {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-top: 16px;
+}
+
+form#formCadastro label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--fog);
+    display: block;
+    margin-bottom: 6px;
+}
+
+form#formCadastro input,
+form#formCadastro select {
+    width: 100%;
+    background: var(--surface-alt);
+    border: 1px solid var(--line);
+    color: var(--mist);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+}
+
+form#formCadastro button[type="submit"] {
+    background: var(--beacon);
+    color: #21160a;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 6px;
+}
