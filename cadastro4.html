@@ -28,6 +28,133 @@
             return valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
+        function hojeISO() {
+            const d = new Date();
+            return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+        }
+
+        // ---------- Progressive disclosure (níveis) ----------
+
+        const NIVEL_LIMIARES = { 2: 50, 3: 150, 4: 300 };
+
+        const MICRO_PARA_MASTER = {
+            "Água": "Moradia", "Air BNB": "Lazer", "Aluguel": "Moradia",
+            "Aluguel Imovel 2": "Moradia", "Aluguel Imovel 3": "Moradia", "Aluguel Imovel 4": "Moradia",
+            "Alvará": "Dívidas e Obrigações", "Amazon": "Pessoal", "Assinaturas de aplicativos": "Conexão e prazer",
+            "Cartão de Crédito": "Cartão de Crédito", "Bitcoin": "Investimentos", "Boliche": "Lazer", "Bolos": "Alimentação",
+            "Caixinha Nubank": "Investimentos", "Caixinha Nubank - Aluguel": "Investimentos", "Caixinha Nubank - Meta 2": "Investimentos",
+            "Claude AI": "Conexão e prazer", "Aporte em Investimentos": "Investimentos", "Rendimentos de Investimentos": "Investimentos",
+            "Consórcio": "Dívidas e Obrigações", "Calçados": "Pessoal", "Contador": "Pessoal", "Congressos": "Educação",
+            "Cursos": "Educação", "Celular BR": "Conexão e prazer", "Celular CA": "Conexão e prazer", "Chocolateria": "Alimentação",
+            "Cinema": "Lazer", "Coffe Shop": "Alimentação", "Cosméticos": "Pessoal", "Delivery Food": "Alimentação",
+            "Diarista": "Moradia", "Distribuidora": "Alimentação", "Dízimo": "Pessoal", "Doceria": "Alimentação",
+            "Drogaria": "Saúde", "Educação": "Educação", "Eletrônicos": "Pessoal", "Empréstimos": "Dívidas e Obrigações",
+            "Exames e concursos": "Educação", "Faculdade": "Educação", "Férias": "Lazer",
+            "Financiamento Imobiliario": "Dívidas e Obrigações", "FGTS": "Pessoal", "FIES": "Dívidas e Obrigações",
+            "F1 game": "Lazer", "F1 TV": "Lazer", "Games": "Lazer", "Impostos": "Dívidas e Obrigações",
+            "Impostos PJ": "Dívidas e Obrigações", "Impostos PJ Simples Nacional": "Dívidas e Obrigações",
+            "Insumos para Produção": "Pessoal", "Internet": "Moradia", "Investimentos": "Investimentos",
+            "IPVA": "Transporte", "IPTU": "Moradia", "Hospedagens AIRBNB": "Lazer", "Lavanderia": "Moradia",
+            "Lava-jato": "Transporte", "Lanche e Fast-food": "Alimentação", "Livros": "Educação", "Limpeza": "Moradia",
+            "Luz": "Moradia", "Manutenção Casa": "Moradia", "Manutenção do Carro": "Transporte", "META Ads": "Tráfego Pago",
+            "Metrô": "Transporte", "Mobília e utensílios": "Moradia", "Ofertas": "Pessoal", "Óticas": "Saúde",
+            "Padaria": "Alimentação", "Papelaria": "Educação", "Passagem aérea": "Lazer", "Plano de Saúde": "Saúde",
+            "PLR": "Salário", "Pensão": "Pessoal", "Pet Shop": "Pets", "PIX Conta PJ": "Pessoal", "PIX Conjuge": "Pessoal",
+            "PIX Familia": "Pessoal", "Passeios e expedições": "Lazer", "Poupança": "Investimentos",
+            "Pós-Graduação": "Educação", "Posto de Gasolina": "Transporte", "Presentes": "Pessoal",
+            "Renovar CNH": "Transporte", "Renovar visto": "Despesas de Viagem a Trabalho", "Restaurantes": "Alimentação",
+            "Reembolso de despesas": "Despesas de Viagem a Trabalho", "Roupas": "Pessoal", "Salário": "Salário",
+            "Serasa": "Dívidas e Obrigações", "Salão de beleza": "Pessoal", "Seguro desemprego": "Salário",
+            "Seguro do Carro": "Transporte", "Shopping": "Pessoal", "Show": "Lazer", "Sorveteria": "Alimentação",
+            "Spotify": "Conexão e prazer", "Supermercado": "Alimentação", "Taxas gerais": "Dívidas e Obrigações",
+            "Taxas do Imovel": "Moradia", "Taxas do Imovel 2": "Moradia", "Taxas do Imovel 3": "Moradia",
+            "Taxas do Imovel 4": "Moradia", "Tik Tok Ads": "Tráfego Pago", "Uber": "Transporte",
+            "Vale-Alimentação": "Alimentação", "Vale-Transporte": "Transporte", "Vestuário": "Pessoal",
+            "Vestuário Conjuge": "Pessoal", "Veterinário": "Pets"
+        };
+
+        function aplicarMasterAutomatico() {
+            const categoria = document.getElementById("categoria").value;
+            const master = MICRO_PARA_MASTER[categoria];
+            if (master) document.getElementById("categoriaMaster").value = master;
+        }
+
+        function getNivelMaximo() {
+            return parseInt(localStorage.getItem("nivelMaximo_demo")) || 1;
+        }
+
+        function setNivelMaximo(n) {
+            localStorage.setItem("nivelMaximo_demo", String(n));
+        }
+
+        function calcularNivelPelaContagem(total) {
+            if (total >= NIVEL_LIMIARES[4]) return 4;
+            if (total >= NIVEL_LIMIARES[3]) return 3;
+            if (total >= NIVEL_LIMIARES[2]) return 2;
+            return 1;
+        }
+
+        function descricaoDesbloqueio(nivel) {
+            const descricoes = {
+                2: "agora você pode registrar a data e o horário exatos de cada gasto.",
+                3: "agora você pode registrar forma de pagamento (e parcelas), tipo de gasto, RSG — e ajustar a categoria master manualmente.",
+                4: "agora você pode registrar o gatilho emocional e o sentimento pós-pagamento — o nível mais completo do método RSG."
+            };
+            return descricoes[nivel] || "";
+        }
+
+        function verificarEvolucaoDeNivel(totalAtual) {
+            const nivelAtual = getNivelMaximo();
+            const nivelPelaContagem = calcularNivelPelaContagem(totalAtual);
+            if (nivelPelaContagem > nivelAtual) {
+                setNivelMaximo(nivelPelaContagem);
+                let mensagem = "";
+                for (let n = nivelAtual + 1; n <= nivelPelaContagem; n++) {
+                    mensagem += `🎉 Nível ${n} desbloqueado!\n${descricaoDesbloqueio(n)}\n\n`;
+                }
+                alert(mensagem.trim());
+            }
+        }
+
+        function toggleCampo(id, mostrar) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.style.display = mostrar ? "flex" : "none";
+            el.querySelectorAll("select, input").forEach(campo => {
+                if (mostrar) {
+                    if (campo.dataset.eraRequired === "true") campo.required = true;
+                } else {
+                    campo.dataset.eraRequired = campo.required ? "true" : "false";
+                    campo.required = false;
+                }
+            });
+        }
+
+        function aplicarVisibilidadeNivel() {
+            const nivel = getNivelMaximo();
+            const nivel2Mais = nivel >= 2;
+            const nivel3Mais = nivel >= 3;
+            const nivel4Mais = nivel >= 4;
+
+            document.getElementById("campoDataInput").style.display = nivel2Mais ? "flex" : "none";
+            document.getElementById("dataFixaTexto").style.display = nivel2Mais ? "none" : "flex";
+            document.getElementById("data").required = nivel2Mais;
+            if (!document.getElementById("data").value) {
+                document.getElementById("data").value = hojeISO();
+            }
+
+            toggleCampo("campoHorario", nivel2Mais);
+            toggleCampo("campoCategoriaMaster", nivel3Mais);
+            toggleCampo("campoFormaPagamentoGroup", nivel3Mais);
+            toggleCampo("campoTipoGasto", nivel3Mais);
+            toggleCampo("campoRSG", nivel3Mais);
+            toggleCampo("campoGatilhoSentimento", nivel4Mais);
+
+            if (!nivel3Mais) {
+                document.getElementById("formaPagamento").value = "Dinheiro";
+                document.getElementById("parcelas").value = 1;
+            }
+        }
         // ---------- Meios de pagamento parcelados (cartão, consórcio, carnê) ----------
 
         const TIPO_LABEL = {
@@ -221,10 +348,12 @@
                 const parcelas = gerarParcelas(despesaBase, parcelasTotal);
                 despesas.push(...parcelas);
                 localStorage.setItem("despesas_demo", JSON.stringify(despesas));
+                verificarEvolucaoDeNivel(despesas.length);
                 alert(`Compra parcelada em ${parcelasTotal}x cadastrada — uma parcela em cada um dos próximos meses.`);
             } else {
                 despesas.push({ ...despesaBase, parcelaAtual: 1, parcelaTotal: 1, grupoParcelaId: null });
                 localStorage.setItem("despesas_demo", JSON.stringify(despesas));
+                verificarEvolucaoDeNivel(despesas.length);
                 alert("Cadastro realizado com sucesso!");
             }
 
@@ -377,6 +506,10 @@
             popularFormaPagamento();
             loadData();
             verificarDicaFinanciamento();
+
+            document.getElementById("tipo").value = "Saída";
+            aplicarMasterAutomatico();
+            aplicarVisibilidadeNivel();
         }
 
         if ("serviceWorker" in navigator) {
@@ -452,14 +585,23 @@
 
         <form id="formCadastro" onsubmit="saveData(event)">
 
-            <label for="data">Data</label>
-            <input type="date" id="data" required>
+            <div id="campoDataInput" style="display:none; flex-direction:column;">
+                <label for="data">Data</label>
+                <input type="date" id="data">
+            </div>
+            <div id="dataFixaTexto" style="display:flex; flex-direction:column;">
+                <label>Data</label>
+                <p style="margin:0; color:var(--mist);">Hoje</p>
+            </div>
 
-            <label for="horario">Horário</label>
-            <input type="time" id="horario" required>
+            <div id="campoHorario" style="display:none; flex-direction:column;">
+                <label for="horario">Horário</label>
+                <input type="time" id="horario">
+            </div>
 
-            <label for="categoriaMaster">Categoria Master</label>
-            <select id="categoriaMaster" required>
+            <div id="campoCategoriaMaster" style="display:none; flex-direction:column;">
+                <label for="categoriaMaster">Categoria Master</label>
+                <select id="categoriaMaster">
                 <option value="Moradia">Moradia</option>
                 <option value="Transporte">Transporte</option>
                 <option value="Alimentação">Alimentação</option>
@@ -477,10 +619,11 @@
                 <option value="Dívidas e Obrigações">Dívidas e Obrigações</option>
                 <option value="Pets">Pets</option>
                 <option value="Pessoal">Pessoal</option>
-            </select>
+                </select>
+            </div>
 
             <label for="categoria">Micro-Categoria</label>
-            <select id="categoria" onchange="verificarDicaFinanciamento()" required>
+            <select id="categoria" onchange="aplicarMasterAutomatico(); verificarDicaFinanciamento();" required>
                 <option value="Água">Água</option>
                 <option value="Air BNB">Air BNB</option>
                 <option value="Aluguel">Aluguel</option>
@@ -608,48 +751,55 @@
                 <option value="Transferência">Transferência</option>
             </select>
 
-            <label for="formaPagamento">Forma de Pagamento</label>
-            <select id="formaPagamento" onchange="toggleParcelasVisibility(); verificarDicaFinanciamento();" required>
-                <option value="Dinheiro">Dinheiro</option>
-                <option value="Débito">Débito</option>
-                <option value="PIX">PIX</option>
-            </select>
+            <div id="campoFormaPagamentoGroup" style="display:none; flex-direction:column; gap:12px;">
+                <label for="formaPagamento">Forma de Pagamento</label>
+                <select id="formaPagamento" onchange="toggleParcelasVisibility(); verificarDicaFinanciamento();">
+                    <option value="Dinheiro">Dinheiro</option>
+                    <option value="Débito">Débito</option>
+                    <option value="PIX">PIX</option>
+                </select>
 
-            <div id="campoParcelas" style="display:none; flex-direction:column;">
-                <label for="parcelas">Parcelas</label>
-                <input type="number" id="parcelas" min="1" max="420" value="1">
+                <div id="campoParcelas" style="display:none; flex-direction:column;">
+                    <label for="parcelas">Parcelas</label>
+                    <input type="number" id="parcelas" min="1" max="420" value="1">
+                </div>
+
+                <p id="dicaFinanciamento" class="hint-text" style="display:none;">
+                    💡 É um financiamento novo com parcelas programadas? Cadastre ele em
+                    "Gerenciar meios de pagamento parcelados" (no topo da página) e selecione
+                    ele aqui em Forma de Pagamento — assim as parcelas futuras são geradas
+                    automaticamente.
+                </p>
             </div>
 
-            <p id="dicaFinanciamento" class="hint-text" style="display:none;">
-                💡 É um financiamento novo com parcelas programadas? Cadastre ele em
-                "Gerenciar meios de pagamento parcelados" (no topo da página) e selecione
-                ele aqui em Forma de Pagamento — assim as parcelas futuras são geradas
-                automaticamente.
-            </p>
+            <div id="campoRSG" style="display:none; flex-direction:column;">
+                <label for="rsg">RSG (Retorno Sobre Gasto)</label>
+                <select id="rsg">
+                    <option value="1">1 😡</option>
+                    <option value="2">2 😕</option>
+                    <option value="3">3 🙂</option>
+                    <option value="4">4 😊</option>
+                    <option value="5">5 🤩</option>
+                </select>
+            </div>
 
-            <label for="rsg">RSG (Retorno Sobre Gasto)</label>
-            <select id="rsg" required>
-                <option value="1">1 😡</option>
-                <option value="2">2 😕</option>
-                <option value="3">3 🙂</option>
-                <option value="4">4 😊</option>
-                <option value="5">5 🤩</option>
-            </select>
+            <div id="campoTipoGasto" style="display:none; flex-direction:column;">
+                <label for="tipoGasto">Tipo de Gasto</label>
+                <select id="tipoGasto">
+                    <option value="Arrependimento">Arrependimento</option>
+                    <option value="Planejado">Planejado</option>
+                    <option value="Pequeno impulso">Pequeno impulso</option>
+                    <option value="Grande impulso">Grande impulso</option>
+                    <option value="Setback não-evitável">Setback não-evitável</option>
+                    <option value="Setback evitável">Setback evitável</option>
+                    <option value="Sonho de vida">Sonho de vida</option>
+                </select>
+            </div>
 
-            <label for="tipoGasto">Tipo de Gasto</label>
-            <select id="tipoGasto" required>
-                <option value="Arrependimento">Arrependimento</option>
-                <option value="Planejado">Planejado</option>
-                <option value="Pequeno impulso">Pequeno impulso</option>
-                <option value="Grande impulso">Grande impulso</option>
-                <option value="Setback não-evitável">Setback não-evitável</option>
-                <option value="Setback evitável">Setback evitável</option>
-                <option value="Sonho de vida">Sonho de vida</option>
-            </select>
-
+            <div id="campoGatilhoSentimento" style="display:none; flex-direction:column; gap:12px;">
             <!-- GATILHO EMOCIONAL -->
             <label for="gatilho">Gatilho Emocional</label>
-            <select id="gatilho" required>
+            <select id="gatilho">
                 <!-- 🔧 Estrutural / Base da vida -->
                 <option value="Manutenção da vida (contas fixas)">Manutenção da vida (contas fixas)</option>
                 <option value="Organização financeira (transferências / investimentos)">Organização financeira
@@ -737,7 +887,7 @@
 
             <!-- NOVO CAMPO: SENTIMENTO PÓS-PAGAMENTO -->
             <label for="sentimentoPos">Sentimento Pós-Pagamento</label>
-            <select id="sentimentoPos" required>
+            <select id="sentimentoPos">
                 <option value="Muito satisfeito">Muito satisfeito</option>
                 <option value="Satisfeito">Satisfeito</option>
                 <option value="Neutro">Neutro</option>
@@ -750,6 +900,7 @@
                 <option value="Preocupado">Preocupado</option>
                 <option value="Incomodado">Incomodado</option>
             </select>
+            </div>
 
             <button type="submit" id="saveBtn">Salvar</button>
         </form>
