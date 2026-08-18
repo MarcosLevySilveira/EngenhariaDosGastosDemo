@@ -28,72 +28,96 @@
             return valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
-        // ---------- Cartões ----------
+        // ---------- Meios de pagamento parcelados (cartão, consórcio, carnê) ----------
 
-        function getCartoes() {
-            return JSON.parse(localStorage.getItem("cartoes_demo")) || [];
+        const TIPO_LABEL = {
+            cartao: "cartão",
+            consorcio: "consórcio",
+            carne: "carnê/crediário",
+            financiamento: "financiamento"
+        };
+
+        function getMeiosParcelados() {
+            return JSON.parse(localStorage.getItem("meiosParcelados_demo")) || [];
         }
 
-        function saveCartoes(cartoes) {
-            localStorage.setItem("cartoes_demo", JSON.stringify(cartoes));
+        function saveMeiosParcelados(meios) {
+            localStorage.setItem("meiosParcelados_demo", JSON.stringify(meios));
         }
 
-        function addCartao(event) {
+        function addMeioParcelado(event) {
             event.preventDefault();
-            const nome = document.getElementById("cartaoNome").value.trim();
-            const fechamento = parseInt(document.getElementById("cartaoFechamento").value);
-            const vencimento = parseInt(document.getElementById("cartaoVencimento").value);
+            const nome = document.getElementById("meioNome").value.trim();
+            const tipo = document.getElementById("meioTipo").value;
+            const vencimento = parseInt(document.getElementById("meioVencimento").value);
+            const fechamentoInput = document.getElementById("meioFechamento").value;
+            const fechamento = tipo === "cartao" && fechamentoInput ? parseInt(fechamentoInput) : null;
 
-            if (!nome || isNaN(fechamento) || isNaN(vencimento)) {
-                alert("Preencha nome, dia de fechamento e dia de vencimento do cartão.");
+            if (!nome || isNaN(vencimento)) {
+                alert("Preencha nome e dia de vencimento.");
+                return;
+            }
+            if (tipo === "cartao" && fechamentoInput === "") {
+                alert("Preencha o dia de fechamento do cartão.");
                 return;
             }
 
-            const cartoes = getCartoes();
-            cartoes.push({
-                id: "cartao_" + Date.now(),
-                nome, fechamento, vencimento
+            const meios = getMeiosParcelados();
+            meios.push({
+                id: "meio_" + Date.now(),
+                nome, tipo, vencimento, fechamento
             });
-            saveCartoes(cartoes);
+            saveMeiosParcelados(meios);
 
             document.getElementById("formCartao").reset();
+            toggleFechamentoVisibility();
             renderCartoesList();
             popularFormaPagamento();
         }
 
-        function deleteCartao(id) {
-            if (!confirm("Remover este cartão? Lançamentos já cadastrados com ele não são apagados, só deixam de mostrar o nome do cartão.")) return;
-            const cartoes = getCartoes().filter(c => c.id !== id);
-            saveCartoes(cartoes);
+        function deleteMeioParcelado(id) {
+            if (!confirm("Remover este meio de pagamento? Lançamentos já cadastrados com ele não são apagados, só deixam de mostrar o nome.")) return;
+            const meios = getMeiosParcelados().filter(m => m.id !== id);
+            saveMeiosParcelados(meios);
             renderCartoesList();
             popularFormaPagamento();
         }
 
         function renderCartoesList() {
-            const cartoes = getCartoes();
+            const meios = getMeiosParcelados();
             const lista = document.getElementById("listaCartoes");
-            if (cartoes.length === 0) {
-                lista.innerHTML = '<p class="hint-text">Nenhum cartão cadastrado ainda.</p>';
+            if (meios.length === 0) {
+                lista.innerHTML = '<p class="hint-text">Nenhum meio de pagamento parcelado cadastrado ainda.</p>';
                 return;
             }
-            lista.innerHTML = cartoes.map(c => `
+            lista.innerHTML = meios.map(m => {
+                const detalhe = m.tipo === "cartao"
+                    ? `fecha dia ${m.fechamento}, vence dia ${m.vencimento}`
+                    : `vence dia ${m.vencimento}`;
+                return `
                 <div class="cartao-row">
-                    <span>${c.nome} <span class="insight-card-caption">fecha dia ${c.fechamento}, vence dia ${c.vencimento}</span></span>
-                    <button type="button" class="btn-small btn-delete" onclick="deleteCartao('${c.id}')">Remover</button>
+                    <span>${m.nome} <span class="insight-card-caption">${TIPO_LABEL[m.tipo]} · ${detalhe}</span></span>
+                    <button type="button" class="btn-small btn-delete" onclick="deleteMeioParcelado('${m.id}')">Remover</button>
                 </div>
-            `).join("");
+            `;
+            }).join("");
+        }
+
+        function toggleFechamentoVisibility() {
+            const tipo = document.getElementById("meioTipo").value;
+            document.getElementById("campoFechamento").style.display = tipo === "cartao" ? "flex" : "none";
         }
 
         function popularFormaPagamento() {
             const select = document.getElementById("formaPagamento");
             const valorAtual = select.value;
-            const cartoes = getCartoes();
+            const meios = getMeiosParcelados();
 
             select.innerHTML = `
                 <option value="Dinheiro">Dinheiro</option>
                 <option value="Débito">Débito</option>
                 <option value="PIX">PIX</option>
-                ${cartoes.map(c => `<option value="cartao:${c.id}">${c.nome} (cartão)</option>`).join("")}
+                ${meios.map(m => `<option value="meio:${m.id}">${m.nome} (${TIPO_LABEL[m.tipo]})</option>`).join("")}
             `;
 
             if ([...select.options].some(o => o.value === valorAtual)) {
@@ -105,16 +129,16 @@
         function toggleParcelasVisibility() {
             const select = document.getElementById("formaPagamento");
             const campo = document.getElementById("campoParcelas");
-            const ehCartao = select.value.startsWith("cartao:");
-            campo.style.display = ehCartao ? "flex" : "none";
-            if (!ehCartao) document.getElementById("parcelas").value = 1;
+            const ehParcelavel = select.value.startsWith("meio:");
+            campo.style.display = ehParcelavel ? "flex" : "none";
+            if (!ehParcelavel) document.getElementById("parcelas").value = 1;
         }
 
         function nomeCartaoPorFormaPagamento(formaPagamento) {
-            if (!formaPagamento || !formaPagamento.startsWith("cartao:")) return null;
-            const id = formaPagamento.replace("cartao:", "");
-            const cartao = getCartoes().find(c => c.id === id);
-            return cartao ? cartao.nome : "Cartão removido";
+            if (!formaPagamento || !formaPagamento.startsWith("meio:")) return null;
+            const id = formaPagamento.replace("meio:", "");
+            const meio = getMeiosParcelados().find(m => m.id === id);
+            return meio ? `${meio.nome} (${TIPO_LABEL[meio.tipo]})` : "Meio de pagamento removido";
         }
 
         // ---------- Parcelas ----------
@@ -182,7 +206,7 @@
 
             let despesas = JSON.parse(localStorage.getItem("despesas_demo")) || [];
 
-            if (formaPagamento.startsWith("cartao:") && parcelasTotal > 1) {
+            if (formaPagamento.startsWith("meio:") && parcelasTotal > 1) {
                 const parcelas = gerarParcelas(despesaBase, parcelasTotal);
                 despesas.push(...parcelas);
                 localStorage.setItem("despesas_demo", JSON.stringify(despesas));
@@ -337,6 +361,7 @@
         }
 
         function initPage() {
+            toggleFechamentoVisibility();
             renderCartoesList();
             popularFormaPagamento();
             loadData();
@@ -385,19 +410,29 @@
         </div>
 
         <details class="filter-panel">
-            <summary>Gerenciar cartões</summary>
+            <summary>Gerenciar meios de pagamento parcelados</summary>
             <div class="filter-row">
-                <form id="formCartao" onsubmit="addCartao(event)" style="display:flex; flex-direction:column; gap:12px;">
-                    <label>Nome do cartão
-                        <input type="text" id="cartaoNome" placeholder="Ex: Nubank" required>
+                <form id="formCartao" onsubmit="addMeioParcelado(event)" style="display:flex; flex-direction:column; gap:12px;">
+                    <label>Nome
+                        <input type="text" id="meioNome" placeholder="Ex: Nubank, Consórcio Casa, Financiamento Apê" required>
                     </label>
-                    <label>Dia de fechamento
-                        <input type="number" id="cartaoFechamento" min="1" max="31" placeholder="Ex: 5" required>
+                    <label>Tipo
+                        <select id="meioTipo" onchange="toggleFechamentoVisibility()" required>
+                            <option value="cartao">Cartão de Crédito</option>
+                            <option value="consorcio">Consórcio</option>
+                            <option value="carne">Carnê / Crediário</option>
+                            <option value="financiamento">Financiamento (casa, carro, faculdade...)</option>
+                        </select>
                     </label>
+                    <div id="campoFechamento" style="display:flex; flex-direction:column;">
+                        <label>Dia de fechamento
+                            <input type="number" id="meioFechamento" min="1" max="31" placeholder="Ex: 5">
+                        </label>
+                    </div>
                     <label>Dia de vencimento
-                        <input type="number" id="cartaoVencimento" min="1" max="31" placeholder="Ex: 12" required>
+                        <input type="number" id="meioVencimento" min="1" max="31" placeholder="Ex: 12" required>
                     </label>
-                    <button type="submit" class="btn-primary">Adicionar cartão</button>
+                    <button type="submit" class="btn-primary">Adicionar</button>
                 </form>
                 <div id="listaCartoes" style="margin-top:14px; display:flex; flex-direction:column; gap:8px;"></div>
             </div>
@@ -570,7 +605,7 @@
 
             <div id="campoParcelas" style="display:none; flex-direction:column;">
                 <label for="parcelas">Parcelas</label>
-                <input type="number" id="parcelas" min="1" max="48" value="1">
+                <input type="number" id="parcelas" min="1" max="420" value="1">
             </div>
 
             <label for="rsg">RSG (Retorno Sobre Gasto)</label>

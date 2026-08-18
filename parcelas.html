@@ -44,7 +44,7 @@
         <div class="form-header">
             <h1>Parcelas em Aberto</h1>
         </div>
-        <p class="hint-text">Compras parceladas no cartão que ainda têm parcelas futuras não pagas. Quite tudo de uma vez, quite com um valor diferente (ex: desconto por antecipar), quite só algumas parcelas, ou cancele o que sobrou.</p>
+        <p class="hint-text">Compras parceladas (cartão, consórcio, carnê ou financiamento) que ainda têm parcelas futuras não pagas. Quite tudo de uma vez, quite com um valor diferente (ex: desconto por antecipar), quite só algumas parcelas, ou cancele o que sobrou.</p>
 
         <div id="gruposContainer"></div>
     </main>
@@ -73,15 +73,22 @@
         localStorage.setItem("despesas_demo", JSON.stringify(despesas));
     }
 
-    function getCartoes() {
-        return JSON.parse(localStorage.getItem("cartoes_demo")) || [];
+    const TIPO_LABEL = {
+        cartao: "cartão",
+        consorcio: "consórcio",
+        carne: "carnê/crediário",
+        financiamento: "financiamento"
+    };
+
+    function getMeiosParcelados() {
+        return JSON.parse(localStorage.getItem("meiosParcelados_demo")) || [];
     }
 
     function nomeCartao(formaPagamento) {
-        if (!formaPagamento || !formaPagamento.startsWith("cartao:")) return "-";
-        const id = formaPagamento.replace("cartao:", "");
-        const cartao = getCartoes().find(c => c.id === id);
-        return cartao ? cartao.nome : "Cartão removido";
+        if (!formaPagamento || !formaPagamento.startsWith("meio:")) return "-";
+        const id = formaPagamento.replace("meio:", "");
+        const meio = getMeiosParcelados().find(m => m.id === id);
+        return meio ? `${meio.nome} (${TIPO_LABEL[meio.tipo]})` : "Meio de pagamento removido";
     }
 
     // Agrupa as parcelas em aberto (data hoje ou futura) por grupoParcelaId
