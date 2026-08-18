@@ -84,7 +84,7 @@
     }
 
     function loadDashboard(){
-        const data = JSON.parse(localStorage.getItem("despesas")) || [];
+        const data = JSON.parse(localStorage.getItem("despesas_demo")) || [];
 
         const now = new Date();
         const filtered = data.filter(d => {

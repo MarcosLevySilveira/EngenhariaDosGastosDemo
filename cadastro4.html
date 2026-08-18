@@ -61,17 +61,17 @@
                 valor, tipo, rsg, tipoGasto, gatilho, sentimentoPos
             };
 
-            let despesas = JSON.parse(localStorage.getItem("despesas")) || [];
+            let despesas = JSON.parse(localStorage.getItem("despesas_demo")) || [];
             despesas.push(novaDespesa);
 
-            localStorage.setItem("despesas", JSON.stringify(despesas));
+            localStorage.setItem("despesas_demo", JSON.stringify(despesas));
 
             alert("Cadastro realizado com sucesso!");
             window.location.reload();
         }
 
         function loadData() {
-            const despesas = JSON.parse(localStorage.getItem("despesas")) || [];
+            const despesas = JSON.parse(localStorage.getItem("despesas_demo")) || [];
             const tableBody = document.getElementById("despesasList");
             tableBody.innerHTML = "";
 
@@ -103,7 +103,7 @@
         }
 
         function editData(index) {
-            const despesas = JSON.parse(localStorage.getItem("despesas"));
+            const despesas = JSON.parse(localStorage.getItem("despesas_demo"));
             const despesa = despesas[index];
 
             document.getElementById("data").value = despesa.data;
@@ -158,19 +158,19 @@
                 valor, tipo, rsg, tipoGasto, gatilho, sentimentoPos
             };
 
-            let despesas = JSON.parse(localStorage.getItem("despesas"));
+            let despesas = JSON.parse(localStorage.getItem("despesas_demo"));
             despesas[index] = updatedDespesa;
 
-            localStorage.setItem("despesas", JSON.stringify(despesas));
+            localStorage.setItem("despesas_demo", JSON.stringify(despesas));
 
             alert("Cadastro atualizado com sucesso!");
             window.location.reload();
         }
 
         function deleteData(index) {
-            let despesas = JSON.parse(localStorage.getItem("despesas"));
+            let despesas = JSON.parse(localStorage.getItem("despesas_demo"));
             despesas.splice(index, 1);
-            localStorage.setItem("despesas", JSON.stringify(despesas));
+            localStorage.setItem("despesas_demo", JSON.stringify(despesas));
 
             alert("Cadastro deletado com sucesso!");
             window.location.reload();
