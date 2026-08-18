@@ -871,6 +871,113 @@ ul.dre-itens .valor-mono {
     white-space: nowrap;
 }
 
+/* ---------- Cartões e Parcelas ---------- */
+
+.cartao-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface-alt);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-size: 0.85rem;
+}
+
+.parcela-group {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    margin-bottom: 14px;
+}
+
+.parcela-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 4px;
+}
+
+.parcela-group-header h3 {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--mist);
+}
+
+.parcela-group-meta {
+    font-size: 0.78rem;
+    color: var(--fog);
+    margin: 0 0 12px;
+}
+
+.parcela-group-total {
+    font-family: var(--font-mono);
+    font-size: 1.1rem;
+    color: var(--beacon);
+}
+
+.parcela-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--surface-alt);
+    font-size: 0.84rem;
+}
+
+.parcela-item:last-child { border-bottom: none; }
+
+.parcela-item label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    color: var(--mist);
+    cursor: pointer;
+}
+
+.parcela-item .valor-mono {
+    font-family: var(--font-mono);
+    color: var(--fog);
+    margin-left: auto;
+}
+
+.parcela-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.parcela-actions button {
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.btn-quitar {
+    background: var(--tide);
+    border: none;
+    color: #0b2018;
+    font-weight: 600;
+}
+
+.btn-quitar-valor {
+    background: transparent;
+    border: 1px solid var(--beacon);
+    color: var(--beacon);
+}
+
+.btn-estornar {
+    background: transparent;
+    border: 1px solid var(--coral);
+    color: var(--coral);
+}
+
 /* ---------- Insight card (padrão em destaque) ---------- */
 
 .hero-value--text {

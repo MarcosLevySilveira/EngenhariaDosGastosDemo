@@ -28,6 +28,121 @@
             return valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
+        // ---------- Cartões ----------
+
+        function getCartoes() {
+            return JSON.parse(localStorage.getItem("cartoes_demo")) || [];
+        }
+
+        function saveCartoes(cartoes) {
+            localStorage.setItem("cartoes_demo", JSON.stringify(cartoes));
+        }
+
+        function addCartao(event) {
+            event.preventDefault();
+            const nome = document.getElementById("cartaoNome").value.trim();
+            const fechamento = parseInt(document.getElementById("cartaoFechamento").value);
+            const vencimento = parseInt(document.getElementById("cartaoVencimento").value);
+
+            if (!nome || isNaN(fechamento) || isNaN(vencimento)) {
+                alert("Preencha nome, dia de fechamento e dia de vencimento do cartão.");
+                return;
+            }
+
+            const cartoes = getCartoes();
+            cartoes.push({
+                id: "cartao_" + Date.now(),
+                nome, fechamento, vencimento
+            });
+            saveCartoes(cartoes);
+
+            document.getElementById("formCartao").reset();
+            renderCartoesList();
+            popularFormaPagamento();
+        }
+
+        function deleteCartao(id) {
+            if (!confirm("Remover este cartão? Lançamentos já cadastrados com ele não são apagados, só deixam de mostrar o nome do cartão.")) return;
+            const cartoes = getCartoes().filter(c => c.id !== id);
+            saveCartoes(cartoes);
+            renderCartoesList();
+            popularFormaPagamento();
+        }
+
+        function renderCartoesList() {
+            const cartoes = getCartoes();
+            const lista = document.getElementById("listaCartoes");
+            if (cartoes.length === 0) {
+                lista.innerHTML = '<p class="hint-text">Nenhum cartão cadastrado ainda.</p>';
+                return;
+            }
+            lista.innerHTML = cartoes.map(c => `
+                <div class="cartao-row">
+                    <span>${c.nome} <span class="insight-card-caption">fecha dia ${c.fechamento}, vence dia ${c.vencimento}</span></span>
+                    <button type="button" class="btn-small btn-delete" onclick="deleteCartao('${c.id}')">Remover</button>
+                </div>
+            `).join("");
+        }
+
+        function popularFormaPagamento() {
+            const select = document.getElementById("formaPagamento");
+            const valorAtual = select.value;
+            const cartoes = getCartoes();
+
+            select.innerHTML = `
+                <option value="Dinheiro">Dinheiro</option>
+                <option value="Débito">Débito</option>
+                <option value="PIX">PIX</option>
+                ${cartoes.map(c => `<option value="cartao:${c.id}">${c.nome} (cartão)</option>`).join("")}
+            `;
+
+            if ([...select.options].some(o => o.value === valorAtual)) {
+                select.value = valorAtual;
+            }
+            toggleParcelasVisibility();
+        }
+
+        function toggleParcelasVisibility() {
+            const select = document.getElementById("formaPagamento");
+            const campo = document.getElementById("campoParcelas");
+            const ehCartao = select.value.startsWith("cartao:");
+            campo.style.display = ehCartao ? "flex" : "none";
+            if (!ehCartao) document.getElementById("parcelas").value = 1;
+        }
+
+        function nomeCartaoPorFormaPagamento(formaPagamento) {
+            if (!formaPagamento || !formaPagamento.startsWith("cartao:")) return null;
+            const id = formaPagamento.replace("cartao:", "");
+            const cartao = getCartoes().find(c => c.id === id);
+            return cartao ? cartao.nome : "Cartão removido";
+        }
+
+        // ---------- Parcelas ----------
+
+        function gerarParcelas(despesaBase, totalParcelas) {
+            const grupoId = "grp_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+            const valorParcela = despesaBase.valor / totalParcelas;
+            const [ano, mes, dia] = despesaBase.data.split("-").map(Number);
+
+            const registros = [];
+            for (let i = 0; i < totalParcelas; i++) {
+                const dataParcela = new Date(ano, (mes - 1) + i, dia);
+                const dataStr = dataParcela.getFullYear() + "-" +
+                    String(dataParcela.getMonth() + 1).padStart(2, "0") + "-" +
+                    String(dataParcela.getDate()).padStart(2, "0");
+
+                registros.push({
+                    ...despesaBase,
+                    valor: valorParcela,
+                    data: dataStr,
+                    parcelaAtual: i + 1,
+                    parcelaTotal: totalParcelas,
+                    grupoParcelaId: grupoId
+                });
+            }
+            return registros;
+        }
+
         function saveData(event) {
             event.preventDefault();
 
@@ -53,20 +168,31 @@
             const gatilho = document.getElementById("gatilho").value;
             const sentimentoPos = document.getElementById("sentimentoPos").value;
 
+            const formaPagamento = document.getElementById("formaPagamento").value;
+            const parcelasTotal = parseInt(document.getElementById("parcelas").value) || 1;
+
             const periodo = getPeriodoDoDia(horario);
 
-            const novaDespesa = {
+            const despesaBase = {
                 data, horario, periodo,
                 categoriaMaster, categoria, descricao,
-                valor, tipo, rsg, tipoGasto, gatilho, sentimentoPos
+                valor, tipo, rsg, tipoGasto, gatilho, sentimentoPos,
+                formaPagamento
             };
 
             let despesas = JSON.parse(localStorage.getItem("despesas_demo")) || [];
-            despesas.push(novaDespesa);
 
-            localStorage.setItem("despesas_demo", JSON.stringify(despesas));
+            if (formaPagamento.startsWith("cartao:") && parcelasTotal > 1) {
+                const parcelas = gerarParcelas(despesaBase, parcelasTotal);
+                despesas.push(...parcelas);
+                localStorage.setItem("despesas_demo", JSON.stringify(despesas));
+                alert(`Compra parcelada em ${parcelasTotal}x cadastrada — uma parcela em cada um dos próximos meses.`);
+            } else {
+                despesas.push({ ...despesaBase, parcelaAtual: 1, parcelaTotal: 1, grupoParcelaId: null });
+                localStorage.setItem("despesas_demo", JSON.stringify(despesas));
+                alert("Cadastro realizado com sucesso!");
+            }
 
-            alert("Cadastro realizado com sucesso!");
             window.location.reload();
         }
 
@@ -78,6 +204,13 @@
             despesas.forEach((despesa, index) => {
                 const row = document.createElement("tr");
                 row.setAttribute("data-tipo", despesa.tipo);
+
+                const nomeCartao = nomeCartaoPorFormaPagamento(despesa.formaPagamento);
+                const formaPagamentoLabel = nomeCartao || despesa.formaPagamento || "-";
+                const parcelaLabel = (despesa.parcelaTotal && despesa.parcelaTotal > 1)
+                    ? `${despesa.parcelaAtual}/${despesa.parcelaTotal}`
+                    : "-";
+
                 row.innerHTML = `
                   <td data-label="Data">${despesa.data}</td>
                   <td data-label="Horário">${despesa.horario || "-"}</td>
@@ -87,6 +220,8 @@
                   <td data-label="Descrição">${despesa.descricao}</td>
                   <td data-label="Valor (R$)">${formatarMoeda(despesa.valor)}</td>
                   <td data-label="Tipo">${despesa.tipo}</td>
+                  <td data-label="Pagamento">${formaPagamentoLabel}</td>
+                  <td data-label="Parcela">${parcelaLabel}</td>
                   <td data-label="RSG">${despesa.rsg || "-"}</td>
                   <td data-label="Tipo de Gasto">${despesa.tipoGasto || "-"}</td>
                   <td data-label="Gatilho Emocional">${despesa.gatilho || "-"}</td>
@@ -120,6 +255,13 @@
             document.getElementById("gatilho").value = despesa.gatilho || "";
             document.getElementById("sentimentoPos").value = despesa.sentimentoPos || "";
 
+            document.getElementById("formaPagamento").value = despesa.formaPagamento || "Dinheiro";
+            toggleParcelasVisibility();
+
+            if (despesa.parcelaTotal && despesa.parcelaTotal > 1) {
+                alert("Essa é uma parcela de uma compra dividida em " + despesa.parcelaTotal + "x. Editar aqui muda só ESSA parcela — pra mexer no grupo inteiro (quitar, cancelar), use a tela \"Parcelas em Aberto\".");
+            }
+
             document.getElementById("saveBtn").onclick = function () {
                 updateData(index);
             };
@@ -150,15 +292,21 @@
             const gatilho = document.getElementById("gatilho").value;
             const sentimentoPos = document.getElementById("sentimentoPos").value;
 
+            const formaPagamento = document.getElementById("formaPagamento").value;
+
             const periodo = getPeriodoDoDia(horario);
 
+            let despesas = JSON.parse(localStorage.getItem("despesas_demo"));
+            const anterior = despesas[index];
+
             const updatedDespesa = {
+                ...anterior,
                 data, horario, periodo,
                 categoriaMaster, categoria, descricao,
-                valor, tipo, rsg, tipoGasto, gatilho, sentimentoPos
+                valor, tipo, rsg, tipoGasto, gatilho, sentimentoPos,
+                formaPagamento
             };
 
-            let despesas = JSON.parse(localStorage.getItem("despesas_demo"));
             despesas[index] = updatedDespesa;
 
             localStorage.setItem("despesas_demo", JSON.stringify(despesas));
@@ -169,6 +317,18 @@
 
         function deleteData(index) {
             let despesas = JSON.parse(localStorage.getItem("despesas_demo"));
+            const despesa = despesas[index];
+
+            if (despesa.parcelaTotal && despesa.parcelaTotal > 1) {
+                const seguir = confirm(
+                    "Essa é uma parcela (" + despesa.parcelaAtual + "/" + despesa.parcelaTotal + ") de uma compra dividida. " +
+                    "Apagar aqui remove só ESSA parcela, sem mexer nas outras. " +
+                    "Pra quitar ou cancelar o grupo inteiro, use a tela \"Parcelas em Aberto\" em vez disso.\n\n" +
+                    "Quer apagar só essa parcela mesmo assim?"
+                );
+                if (!seguir) return;
+            }
+
             despesas.splice(index, 1);
             localStorage.setItem("despesas_demo", JSON.stringify(despesas));
 
@@ -177,6 +337,8 @@
         }
 
         function initPage() {
+            renderCartoesList();
+            popularFormaPagamento();
             loadData();
         }
 
@@ -208,6 +370,7 @@
         <div class="nav-group">
             <p class="nav-group-title">Lançar</p>
         <a href="cadastro4.html" class="active">Cadastrar Despesa/Entrada</a>
+        <a href="parcelas.html">Parcelas em Aberto</a>
         </div>
         <div class="nav-group">
             <p class="nav-group-title">Relatórios</p>
@@ -220,6 +383,25 @@
         <div class="form-header">
             <h1>Cadastrar Nova Despesa/Entrada</h1>
         </div>
+
+        <details class="filter-panel">
+            <summary>Gerenciar cartões</summary>
+            <div class="filter-row">
+                <form id="formCartao" onsubmit="addCartao(event)" style="display:flex; flex-direction:column; gap:12px;">
+                    <label>Nome do cartão
+                        <input type="text" id="cartaoNome" placeholder="Ex: Nubank" required>
+                    </label>
+                    <label>Dia de fechamento
+                        <input type="number" id="cartaoFechamento" min="1" max="31" placeholder="Ex: 5" required>
+                    </label>
+                    <label>Dia de vencimento
+                        <input type="number" id="cartaoVencimento" min="1" max="31" placeholder="Ex: 12" required>
+                    </label>
+                    <button type="submit" class="btn-primary">Adicionar cartão</button>
+                </form>
+                <div id="listaCartoes" style="margin-top:14px; display:flex; flex-direction:column; gap:8px;"></div>
+            </div>
+        </details>
 
         <form id="formCadastro" onsubmit="saveData(event)">
 
@@ -379,6 +561,18 @@
                 <option value="Transferência">Transferência</option>
             </select>
 
+            <label for="formaPagamento">Forma de Pagamento</label>
+            <select id="formaPagamento" onchange="toggleParcelasVisibility()" required>
+                <option value="Dinheiro">Dinheiro</option>
+                <option value="Débito">Débito</option>
+                <option value="PIX">PIX</option>
+            </select>
+
+            <div id="campoParcelas" style="display:none; flex-direction:column;">
+                <label for="parcelas">Parcelas</label>
+                <input type="number" id="parcelas" min="1" max="48" value="1">
+            </div>
+
             <label for="rsg">RSG (Retorno Sobre Gasto)</label>
             <select id="rsg" required>
                 <option value="1">1 😡</option>
@@ -520,6 +714,8 @@
                             <th>Descrição</th>
                             <th>Valor</th>
                             <th>Tipo</th>
+                            <th>Pagamento</th>
+                            <th>Parcela</th>
                             <th>RSG</th>
                             <th>Tipo de Gasto</th>
                             <th>Gatilho Emocional</th>
